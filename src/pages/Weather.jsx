@@ -2,6 +2,7 @@
 /// MIT License
 ///
 
+
 import { useState } from 'react';
 import RchDropdown from 'react-components-helper/components/RchDropdown'
 import RchGeoCoords from 'react-components-helper/components/RchGeoCoords'
@@ -161,9 +162,7 @@ function Weather() {
   var [year, setYear] = useState('2022');
 
   useEffect(() => {
-    console.log(`useeffect ${year} ${townInfo}`)
     if (townInfo && year) {
-      console.log('useeffect in action')
       getWeatherData(townInfo).then(meteoData => {
         let labels = null;
         let datasets = [];
@@ -185,19 +184,17 @@ function Weather() {
     }
   }, [townInfo, year]);
 
-  const coords = RchGeoCoords({
-    defaultTownName: 'Bordeaux',
-    newCoordsCallback: (town) => setTownInfo(town),
-    countryFilter: ['FR']
-  })
-
   return (
     <div>
       Weather History
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--rch-margin-s)" }}>
 
-        { coords.render() }
+        <RchGeoCoords
+          defaultTownName= 'Bordeaux'
+          newCoordsCallback= { (town) => setTownInfo(town)}
+          countryFilter= { ['FR'] }
+          />
 
         <RchDropdown
           type= 'dropdown'
