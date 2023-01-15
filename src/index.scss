@@ -1,0 +1,22 @@
+/// Copyright (c) Pascal Brand
+/// MIT License
+///
+
+@import "react-components-helper/scss/utility/rch-reset.scss";
+@import "react-components-helper/scss/utility/rch-default-values.scss";
+@import "react-components-helper/scss/layout/rch-basics.scss";
+
+:root {
+  font-size: var(--rch-root-font-size);
+}
+
+body {
+  background-color: var(--rch-body-bg-color);
+  color: var(--rch-body-color);
+}
+
+.pbr-container {
+  max-width: 1024px;
+  margin: auto;
+  padding: 1rem;
+}
