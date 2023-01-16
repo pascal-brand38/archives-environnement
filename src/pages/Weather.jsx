@@ -13,11 +13,12 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import { useEffect } from 'react';
 
 ChartJS.register(
@@ -25,6 +26,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -104,39 +106,82 @@ const meteoConfig = {
 function getSrc() { return meteoConfig.archive.sources[0]; }
 function getVariable() { return getSrc().variables[0]; }
 
-function getStats(labels, datas, year) {
+function getStats(labels, datas, selectedYearString) {
   const removeYear = (label) => label.substring(5);
   const getYear = (label) => label.substring(0,4);
-  let days = [];
-  let datasMin = [];
-  let datasMax = [];
-  let datasNow = [];
+
+  let labelsPerDay = []   // array [0..365] containing the labels for 1 year (day-month)
+  let datasPerDay = []    // array [0..365] containing arrays of values for a given day
+  let datasSelectedYear = []    // array [0..365] containing the value for a given day of the selected year
+
+  let selectedYearInt = parseInt(selectedYearString)
   for (let i=0; i<365; i++) {
-    days.push(removeYear(labels[i]))
-    datasMin.push(datas[i])
-    datasMax.push(datas[i])
+    labelsPerDay.push(removeYear(labels[i]))
+    datasPerDay.push([ datas[i] ])
   }
-  let curr = 0;
+  let currDay = 0;
+  let currentYear = 1959+1;   // TODO: hardcoded value
   for (let i=365; i<labels.length; i++) {
-    if (removeYear(labels[i]) !== days[curr]) {
-      // console.log(labels[i], days[curr])
-      continue
+    if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
+      if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
+        continue
+      }
     }
-    if (getYear(labels[i]) === year) {
-      datasNow.push(datas[i])
+    if (selectedYearInt === currentYear) {
+      datasSelectedYear.push(datas[i])
     }
+    datasPerDay[currDay].push(datas[i])
 
-    if (datasMin[curr] > datas[i]) {
-      datasMin[curr] = datas[i]
+    currDay = (currDay + 1) % 365;
+    if (currDay === 0) {
+      currentYear ++
     }
-    if (datasMax[curr] < datas[i]) {
-      datasMax[curr] = datas[i]
-    }
-
-    curr = (curr + 1) % 365;
   }
 
-  return { days, datasMin, datasMax, datasNow }
+  let minPerDay = []
+  let maxPerDay = []
+  let averagePerDay = [];
+  datasPerDay.forEach((list, index) => {
+    list.sort((a,b)=>a-b)
+    minPerDay.push(list[0])
+    maxPerDay.push(list[list.length - 1])
+    
+    averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
+  })
+
+  let lowNb = 0
+  let highNb = 0
+  datasPerDay.forEach((list, index) => {
+    let low = list[5];
+    let high = list[list.length-1-5]
+    if (datasSelectedYear[index] < low) {
+      lowNb ++;
+      // console.log(`index=${index} Low value: ${datasSelectedYear[index]} < ${low}`)
+    }
+    if (datasSelectedYear[index] > high) {
+      highNb ++
+      // console.log(`index=${index} High value: ${datasSelectedYear[index]} > ${high}`)
+    }
+  })
+  console.log(`lowNb=${lowNb}  highNb=${highNb}`)
+
+  let histogram = new Array(datasPerDay[0].length).fill(0);
+  datasSelectedYear.forEach((value, index) => histogram[datasPerDay[index].indexOf(value)]++)
+  console.log(histogram)
+
+  let labelsHistogram = new Array(datasPerDay[0].length).fill(0)
+  labelsHistogram.forEach((value, index) => { labelsHistogram[index]=index} )
+  console.log(labelsHistogram)
+
+  return {
+    labelsPerDay,   // array [0..365] containing the labels for 1 year (day-month)
+    minPerDay,
+    maxPerDay,
+    averagePerDay,
+    datasSelectedYear,
+    labelsHistogram,
+    histogram,
+  }
 }
 
 async function getWeatherData(townInfo) {
@@ -171,14 +216,20 @@ function Weather() {
 
         // labels = getVariable().getLabels(meteoData)
         // datasets.push({ data: getVariable().getData(meteoData)});
-        labels = minMax.days;
-        datasets.push({ data: minMax.datasMin, borderColor: 'Blue', borderWidth: 1  });
-        datasets.push({ data: minMax.datasMax, borderColor: 'Red', borderWidth: 1 });
-        datasets.push({ data: minMax.datasNow, borderColor: 'Green', borderWidth: 1  });
+        labels = minMax.labelsPerDay;
+        datasets.push({ data: minMax.minPerDay, borderColor: 'Blue', borderWidth: 1  });
+        datasets.push({ data: minMax.maxPerDay, borderColor: 'Red', borderWidth: 1 });
+        datasets.push({ data: minMax.datasSelectedYear, borderColor: 'Green', borderWidth: 1  });
         
         setGraphData({
-          labels: labels,
-          datasets: datasets,
+          line: {
+            labels: labels,
+            datasets: datasets,
+          },
+          bar: {
+            labels: minMax.labelsHistogram,
+            datasets: [ { data: minMax.histogram}],
+          }
         });
       })
     }
@@ -205,9 +256,11 @@ function Weather() {
           />
       </div>
       
-      { graphData && <Line options={chartjsOptions} data={graphData} /> }
+      { graphData && <Line options={chartjsOptions} data={graphData.line} /> }
+      { /* graphData && <Bar  data={graphData.bar} />  */}
     </div>
   )
 }
+// TODO: add copyright to open data meteo
 
 export default Weather;
