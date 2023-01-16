@@ -212,7 +212,7 @@ function Loading() {
     <div className="pbr-flex pbr-modal">
       <div className="rch-loading-rotate"> 
         <div>
-          <img src="/src/assets/sun.svg" width="50px" />
+          <img src="assets/sun.svg" width="50px" />
         </div>
       </div>
     </div>
