@@ -1,9 +1,9 @@
-import Weather from "./pages/Weather"
+import Climat from "./pages/Climat"
 
 function App() {
   return (
     <div className="App">
-      <Weather />
+      <Climat />
     </div>
   )
 }

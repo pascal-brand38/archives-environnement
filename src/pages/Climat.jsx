@@ -149,29 +149,34 @@ function getStats(labels, datas, selectedYearString) {
     averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
   })
 
-  let lowNb = 0
-  let highNb = 0
-  datasPerDay.forEach((list, index) => {
-    let low = list[5];
-    let high = list[list.length-1-5]
-    if (datasSelectedYear[index] < low) {
-      lowNb ++;
-      // console.log(`index=${index} Low value: ${datasSelectedYear[index]} < ${low}`)
+  let histogramLabels = new Array(2022 - 1959 + 1).fill(0)
+  histogramLabels.forEach((item, index) => histogramLabels[index] = index + 159)
+  let histogramLow = new Array(2022 - 1959 + 1).fill(0);
+  let histogramHigh = new Array(2022 - 1959 + 1).fill(0);
+  currentYear = 0;   // TODO: hardcoded value
+  currDay = 0
+  for (let i=0; i<datas.length; i++) {
+    if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
+      if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
+        continue
+      }
     }
-    if (datasSelectedYear[index] > high) {
-      highNb ++
-      // console.log(`index=${index} High value: ${datasSelectedYear[index]} > ${high}`)
+
+    let low = datasPerDay[currDay][3];
+    let high = datasPerDay[currDay][datasPerDay[currDay].length-1-3]
+
+    if (datas[i] < low) {
+      histogramLow[currentYear]--;
     }
-  })
-  console.log(`lowNb=${lowNb}  highNb=${highNb}`)
+    if (datas[i] > high) {
+      histogramHigh[currentYear]++;
+    }
+    currDay = (currDay + 1) % 365;
+    if (currDay === 0) {
+      currentYear ++
+    }
+  }
 
-  let histogram = new Array(datasPerDay[0].length).fill(0);
-  datasSelectedYear.forEach((value, index) => histogram[datasPerDay[index].indexOf(value)]++)
-  console.log(histogram)
-
-  let labelsHistogram = new Array(datasPerDay[0].length).fill(0)
-  labelsHistogram.forEach((value, index) => { labelsHistogram[index]=index} )
-  console.log(labelsHistogram)
 
   return {
     labelsPerDay,   // array [0..365] containing the labels for 1 year (day-month)
@@ -179,8 +184,9 @@ function getStats(labels, datas, selectedYearString) {
     maxPerDay,
     averagePerDay,
     datasSelectedYear,
-    labelsHistogram,
-    histogram,
+    histogramLabels,
+    histogramLow,
+    histogramHigh,
   }
 }
 
@@ -201,13 +207,28 @@ function getListYear(from, to) {
   return list
 }
 
-function Weather() {
-  var [graphData, setGraphData] = useState(null);
-  var [townInfo, setTownInfo] = useState(null);
-  var [year, setYear] = useState('2022');
+function Loading() {
+  return (
+    <div className="pbr-flex pbr-modal">
+      <div className="rch-loading-rotate"> 
+        <div>
+          <img src="/src/assets/sun.svg" width="50px" />
+        </div>
+      </div>
+    </div>
+  );
+
+}
+
+function Climat() {
+  const [graphData, setGraphData] = useState(null);
+  const [townInfo, setTownInfo] = useState(null);
+  const [year, setYear] = useState('2022');
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (townInfo && year) {
+      setLoading(true)
       getWeatherData(townInfo).then(meteoData => {
         let labels = null;
         let datasets = [];
@@ -227,20 +248,20 @@ function Weather() {
             datasets: datasets,
           },
           bar: {
-            labels: minMax.labelsHistogram,
-            datasets: [ { data: minMax.histogram}],
+            labels: minMax.histogramLabels,
+            datasets: [ { data: minMax.histogramLow, backgroundColor:'Blue' }, { data: minMax.histogramHigh, backgroundColor:'Red' } ],
           }
         });
+        setLoading(false)
       })
     }
   }, [townInfo, year]);
 
   return (
     <div>
-      Weather History
+      Climat
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--rch-margin-s)" }}>
-
         <RchGeoCoords
           defaultTownName= 'Bordeaux'
           newCoordsCallback= { (town) => setTownInfo(town)}
@@ -257,10 +278,12 @@ function Weather() {
       </div>
       
       { graphData && <Line options={chartjsOptions} data={graphData.line} /> }
-      { /* graphData && <Bar  data={graphData.bar} />  */}
+      { graphData && <Bar  data={graphData.bar} /> }
+
+      { loading && <Loading /> }
     </div>
   )
 }
 // TODO: add copyright to open data meteo
 
-export default Weather;
+export default Climat;
