@@ -48,6 +48,9 @@ var chartjsOptions = {
     point: {
       pointStyle: false,
     },
+    line: {
+      borderWidth: 1,
+    },
   },
   scales: {
     // checks https://www.chartjs.org/docs/latest/axes/labelling.html#creating-custom-tick-formats
@@ -89,22 +92,38 @@ const meteoConfig = {
         url: "https://archive-api.open-meteo.com/v1/archive?timezone=Europe%2FBerlin",
         apiTownInfo: (townInfo) => { return "&latitude=" + townInfo.latitude + "&longitude=" + townInfo.longitude },
         description: "Historique",
+        availableVariables: [ 
+          "Température Min",
+          "Température Max",
+          "Précipitations"
+        ],
         variables: [
           {
             description: "Température Min",
             apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=temperature_2m_min",    // TODO: start and end dates
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_min,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
-          }
+          },
+          {
+            description: "Température Max",
+            apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=temperature_2m_max",    // TODO: start and end dates
+            getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
+            getLabels: (jsonResponse) => jsonResponse.daily.time,
+          },
+          {
+            description: "Précipitations",    // TODO: graphs for precipitations is not that good
+            apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=precipitation_sum",    // TODO: start and end dates
+            getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
+            getLabels: (jsonResponse) => jsonResponse.daily.time,
+          },
         ],
       }
     ],
   },
 };
 
-// TODO: be able to select the source and the variable to output
 function getSrc() { return meteoConfig.archive.sources[0]; }
-function getVariable() { return getSrc().variables[0]; }
+function getVariable(index) { return getSrc().variables[index]; }
 
 function getStats(labels, datas, selectedYearString) {
   const removeYear = (label) => label.substring(5);
@@ -190,10 +209,10 @@ function getStats(labels, datas, selectedYearString) {
   }
 }
 
-async function getWeatherData(townInfo) {
+async function getWeatherData(townInfo, variableIndex) {
   console.log(townInfo)
   const src = getSrc();
-  const variable = getVariable();
+  const variable = getVariable(variableIndex);
   const get = await fetch(src.url + src.apiTownInfo(townInfo) + variable.apiField);
   const responses = await get.json();
   return responses;
@@ -224,23 +243,40 @@ function Climat() {
   const [graphData, setGraphData] = useState(null);
   const [townInfo, setTownInfo] = useState(null);
   const [year, setYear] = useState('2022');
+  const [ variableIndex, setVariableIndex ] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (townInfo && year) {
       setLoading(true)
-      getWeatherData(townInfo).then(meteoData => {
+      getWeatherData(townInfo, variableIndex).then(meteoData => {
         let labels = null;
         let datasets = [];
 
-        const minMax = getStats(getVariable().getLabels(meteoData), getVariable().getData(meteoData), year);
+        const minMax = getStats(
+          getVariable(variableIndex).getLabels(meteoData),
+          getVariable(variableIndex).getData(meteoData),
+          year);
 
         // labels = getVariable().getLabels(meteoData)
         // datasets.push({ data: getVariable().getData(meteoData)});
         labels = minMax.labelsPerDay;
-        datasets.push({ data: minMax.minPerDay, borderColor: 'Blue', borderWidth: 1  });
-        datasets.push({ data: minMax.maxPerDay, borderColor: 'Red', borderWidth: 1 });
-        datasets.push({ data: minMax.datasSelectedYear, borderColor: 'Green', borderWidth: 1  });
+        datasets.push({
+          data: minMax.minPerDay,
+          label: "Min", 
+          borderColor: 'Blue',
+        });
+        datasets.push({
+          data: minMax.maxPerDay,
+          label: "Max", 
+          borderColor: 'Red',
+        });
+        datasets.push({
+          data: minMax.datasSelectedYear,
+          label: year,
+          borderColor: 'Green',
+        });
+        chartjsOptions.plugins.title.text = getVariable(variableIndex).description;
         
         setGraphData({
           line: {
@@ -255,13 +291,13 @@ function Climat() {
         setLoading(false)
       })
     }
-  }, [townInfo, year]);
+  }, [townInfo, year, variableIndex]);
 
   return (
     <div>
       Climat
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--rch-margin-s)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-margin-s)" }}>
         <RchGeoCoords
           defaultTownName= 'Bordeaux'
           newCoordsCallback= { (town) => setTownInfo(town)}
@@ -274,6 +310,14 @@ function Climat() {
           list= { getListYear(2022, 1959) }
           valueFromItem= { (item) => item }
           onSelect= { ({ index, item }) => setYear(item) }
+          />
+
+        <RchDropdown
+          type= 'dropdown'
+          initialValue= { getSrc().availableVariables[0] }
+          list= { getSrc().availableVariables }
+          valueFromItem= { (item) => item }
+          onSelect= { ({ index, item }) => setVariableIndex(index) }
           />
       </div>
       
