@@ -34,7 +34,8 @@ ChartJS.register(
 );
 
 var chartjsOptions = {
-  responsive: true,
+  //responsive: false,
+  maintainAspectRatio: false,
   color: "White",
   plugins: {
     legend: {
@@ -327,8 +328,12 @@ function Climat() {
           />
       </div>
       
-      { graphData && <Line options={chartjsOptions} data={graphData.line} /> }
-      { graphData && <Bar  data={graphData.bar} /> }
+      { graphData && 
+        <div style={{height: "60vh", width: "100%"}}>
+          <Line redraw={true} options={chartjsOptions} data={graphData.line} />
+        </div>
+      }
+      { /* graphData && <Bar  data={graphData.bar} /> */ }
 
       { loading && <Loading /> }
     </div>

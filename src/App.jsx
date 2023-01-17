@@ -21,7 +21,9 @@ function RootLayout() {
         <nav className='pbr-menu'>
           <div className='pbr-menu__logo'>
             <img src={logo} width="30px"/>
-            <span> Archives Environnement </span>
+          </div>
+          <div className='pbr-menu__text'>
+            Archives Environnement
           </div>
           <NavLink to="/">Climat</NavLink>    { /* NavLink has an active to know where we are */ }
         </nav>
