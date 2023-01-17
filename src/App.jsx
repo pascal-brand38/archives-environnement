@@ -10,6 +10,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import Climat from "./pages/Climat"
 
 import { Outlet, NavLink } from "react-router-dom";
+import logo from "./img/sun.svg"
 
 function RootLayout() {
   return (
@@ -19,7 +20,7 @@ function RootLayout() {
       <header>
         <nav className='pbr-menu'>
           <div className='pbr-menu__logo'>
-            <img src='/src/assets/sun.svg' width="30px"/>
+            <img src={logo} width="30px"/>
             <span> Archives Environnement </span>
           </div>
           <NavLink to="/">Climat</NavLink>    { /* NavLink has an active to know where we are */ }
@@ -30,7 +31,6 @@ function RootLayout() {
       </main>
     </div>
     </HelmetProvider>
-
   )
 }
 

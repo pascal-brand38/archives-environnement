@@ -4,6 +4,7 @@
 
 
 import { useState } from 'react';
+import PbrSEO from '../components/PbrSeo';
 import RchDropdown from 'react-components-helper/components/RchDropdown'
 import RchGeoCoords from 'react-components-helper/components/RchGeoCoords'
 
@@ -226,17 +227,17 @@ function getListYear(from, to) {
   return list
 }
 
+import logo from "../img/sun.svg"
 function Loading() {
   return (
     <div className="pbr-flex pbr-modal">
       <div className="rch-loading-rotate"> 
         <div>
-          <img src="assets/sun.svg" width="50px" />
+          <img src={logo} width="50px" />
         </div>
       </div>
     </div>
   );
-
 }
 
 function Climat() {
@@ -295,7 +296,12 @@ function Climat() {
 
   return (
     <div>
-      Climat
+      <PbrSEO
+        title='Archives Environnement | Climat'
+        description='Graphe sur les archives climatiques: température min et max, précipitations,...'
+        canonical='/'
+        addFacebookTag={true}
+      />
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-margin-s)" }}>
         <RchGeoCoords
