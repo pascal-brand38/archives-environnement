@@ -21,6 +21,32 @@ body {
   padding: 1rem;
 }
 
+.pbr-menu {
+  // TODO: responsive menu
+  // TODO: add in the sccs directory, possibly in another npm repo
+  display: flex;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  margin-bottom: 1rem;
+
+  &__logo {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-right: auto;
+  }
+
+  a {     // this is for React's NavLink
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  
+    &.active {    // active comes from React NavLink - this is the page we're on
+      border-bottom: 2px solid var(--rch-color-1);
+    }
+  }
+}
+
 .pbr-flex {
   display: flex;
   align-items: center;
