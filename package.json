@@ -12,11 +12,15 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "install": "^0.13.0",
+    "leaflet": "^1.9.3",
+    "npm": "^9.3.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-components-helper": "github:pascal-brand38/react-components-helper",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^1.3.0",
+    "react-leaflet": "^4.2.0",
     "react-router-dom": "^6.6.2"
   },
   "devDependencies": {

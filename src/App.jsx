@@ -8,6 +8,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 // pages
 import Climat from "./pages/Climat"
+import Eau from "./pages/Eau"
 
 import { Outlet, NavLink } from "react-router-dom";
 import logo from "./img/sun.svg"
@@ -42,7 +43,7 @@ const router = createHashRouter(
   createRoutesFromElements(
     <Route path="/" element={<RootLayout />}>
       <Route index element={<Climat />} />
-      {/* <Route path="text-effect" element={<TextEffect />} /> */}
+      <Route path="eau" element={<Eau />} /> 
 
       { /* TODO: <Route path="*" element={<NotFound />} /> */ }
     </Route>
