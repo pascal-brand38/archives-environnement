@@ -44,7 +44,7 @@ async function getHydroObservation(stationCode) {
 
 // https://leafletjs.com/examples/quick-start/
 // https://react-leaflet.js.org/docs/example-popup-marker/
-function Eau() {
+function CoursEau() {
   const [stations, setStations] = useState(null)
   const observations = useRef({});
 
@@ -125,7 +125,9 @@ function Eau() {
   )
 
 }
-export default Eau
+export default CoursEau
 
 
 // TODO: group markers
+// TODO: history graph for a given station
+// TODO: cote d'alerte
