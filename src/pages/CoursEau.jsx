@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css';
+// import 'leaflet/dist/leaflet.css';
 
 const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Pascal Brand'
 
@@ -131,3 +131,6 @@ export default CoursEau
 // TODO: group markers
 // TODO: history graph for a given station
 // TODO: cote d'alerte
+// TODO: getting the map example at https://react-leaflet.js.org/docs/example-external-state/
+//       can be interesting
+// TODO: lazy-load leaflet when used only
