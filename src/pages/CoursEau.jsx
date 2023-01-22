@@ -1,15 +1,14 @@
 /// Copyright (c) Pascal Brand
 /// MIT License
 ///
-
-// import 'leaflet/dist/leaflet.css';
-
+/// Show a map with river stations (in france), and display levels on click
+///
+/// Useful links:
+///   https://api.gouv.fr/documentation/api_hubeau_hydrometrie
+///   https://hubeau.eaufrance.fr/sites/default/files/api/demo/hydro_tr.htm
+///   https://hubeau.eaufrance.fr/api/v1/hydrometrie/observations_tr?code_entite=O9090010&size=20
 
 import { HubeauMap } from '../components/Hubeau'
-
-
-// https://api.gouv.fr/documentation/api_hubeau_hydrometrie
-// https://hubeau.eaufrance.fr/sites/default/files/api/demo/hydro_tr.htm
 
 function observationToStr(observation) {
   let streamFlow=null
@@ -25,16 +24,22 @@ function observationToStr(observation) {
   return `Débit: ${streamFlow}m3/h<br>Hauteur: ${height}mm`;
 }
 
-
-
-// https://hubeau.eaufrance.fr/api/v1/hydrometrie/observations_tr?code_entite=O9090010&size=20
+const handles = {
+  getStationCoords: (station) => [ station.latitude_station, station.longitude_station ],
+  getStationDesc: (station) => station.libelle_station,
+  getStationWorking: (station) => station.en_service,
+  getHubeauStationsUri: (north, east, south, west) =>
+    `https://hubeau.eaufrance.fr/api/v1/hydrometrie/referentiel/stations/?bbox=${west},${south},${east},${north}&format=json`,
+  getStationId: (station) => station.code_station,
+  getHubeauObservationUri: (station) => 
+    `https://hubeau.eaufrance.fr/api/v1/hydrometrie/observations_tr?code_entite=${station.code_station}&format=json&size=20`,
+  observationToStr: observationToStr,
+}
 
 function CoursEau() {
   return (
     <HubeauMap 
-      apiStation='/v1/hydrometrie/referentiel/stations/'
-      apiObservation='/v1/hydrometrie/observations_tr'
-      observationToStr={observationToStr}
+      handles={handles}
     />
   );
 }

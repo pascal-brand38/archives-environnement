@@ -1,9 +1,21 @@
 /// Copyright (c) Pascal Brand
 /// MIT License
+/// 
+/// Utility component to display a map with Hubeau station (hydro, piezometry,...)
+/// Takes an object of handles in input to:
+/// - getStationCoords(station): return an array [latitude longitude] of the station position
+/// - getStationDesc(station): return a string description of the station
+/// - getStationWorking(station): return true if the station is still in use
+/// - getHubeauStationsUri(north, east, south, west): return the api link to get the list of the station in a geo rectangle
+/// - getStationId(station): return a unique id of the station
+/// - getHubeauObservationUri(station): return the api link to get the observation from a station
+/// - observationToStr(observation): return a string of the observation
 ///
 /// Use react-leaflet:
 ///     https://leafletjs.com/examples/quick-start/
 ///     https://react-leaflet.js.org/docs/example-popup-marker/
+///
+
 
 // TODO: group markers when too many stations at the same place
 // TODO: history graph for a given station
@@ -14,39 +26,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
+// import 'leaflet/dist/leaflet.css';
+
 
 const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | Pascal Brand'
 
-/// getHubeauStations()
-/// get the all the stations from Hubeau, for a given apiuri
-/// This could be:
-/// - /v1/hydrometrie/referentiel/stations
-///       rivers streamflow, height,... - cf. https://hubeau.eaufrance.fr/page/api-hydrometrie
-/// - /v1/niveaux_nappes/stations
-//        piezometry (heigh,... of inground water) - cf. !https://hubeau.eaufrance.fr/page/api-piezometrie
-/// north, east, south, west correspond to gps coordinate of the geo rectangle we want the stations for
-/// 
-/// it returns datas, as described in the Hubeau API.
-/// Typically an array of json objects repreasenting stations containing:
-/// - latitude_station
-/// - longitude_station
-/// - en_service: still working or not
+/// getUriData(): get response from an uri
 ///
-async function getHubeauStations(apiuri, north, east, south, west) {
-  const uri = `https://hubeau.eaufrance.fr/api/${apiuri}?bbox=${west},${south},${east},${north}&format=json`
+async function getUriData(uri) {
+  // console.log('uri= ', uri)
   const get = await fetch(uri)
   const responses = await get.json();
-  return responses.data;
-}
-
-/// getHubeauObservation
-/// get hubeau observations of a stations, for a given apiuri
-/// Tested with:
-/// - /v1/hydrometrie/observations_tr
-async function getHubeauObservation(apiuri, stationCode) {
-  const uri = `https://hubeau.eaufrance.fr/api/${apiuri}?code_entite=${stationCode}&format=json&size=20`
-  const get = await fetch(uri)
-  const responses = await get.json();
+  // console.log(responses.data)
   return responses.data;
 }
 
@@ -56,7 +47,7 @@ async function getHubeauObservation(apiuri, stationCode) {
 /// apiObservation: api to get an observation of a station. This has been tested with:
 ///       /v1/hydrometrie/observations_tr
 ///
-function HubeauMap({ apiStation, apiObservation, observationToStr }) {
+function HubeauMap({ handles }) {
   const [stations, setStations] = useState(null)
   const observations = useRef({});
 
@@ -69,7 +60,7 @@ function HubeauMap({ apiStation, apiObservation, observationToStr }) {
 
   function updateNewBound(e) {
     let newBounds = e.target.getBounds();
-    getHubeauStations(apiStation, newBounds.getNorth(), newBounds.getEast(), newBounds.getSouth(), newBounds.getWest())
+    getUriData(handles.getHubeauStationsUri(newBounds.getNorth(), newBounds.getEast(), newBounds.getSouth(), newBounds.getWest()))
       .then((s) => {
         setStations(s)    // set all the stations inside this new bounds
         observations.current = {}   // reset all observations so that popups are fine
@@ -88,20 +79,21 @@ function HubeauMap({ apiStation, apiObservation, observationToStr }) {
     if (stations) {     // we have fetched all stations
       return (
         stations.map((s, i) => {
-          if (s.en_service) {
+          if (handles.getStationWorking(s)) {
             return (
               <Marker
-                key={s.code_station}
-                position={[s.latitude_station, s.longitude_station]}
+                key={i}
+                position={ handles.getStationCoords(s) }
                 eventHandlers={{
                   // look at https://leafletjs.com/reference.html for events
                   popupopen: (e) => {
-                    if (!observations.current[s.code_station]) {
-                      getHubeauObservation(apiObservation, s.code_station)
+                    if (!observations.current[handles.getStationId(s)]) {
+                      getUriData(handles.getHubeauObservationUri(s))
                         .then(r => {
-                          addObservation(s.code_station, r)
+                          // console.log(`station: ${JSON.stringify(s)}`)
+                          addObservation(handles.getStationId(s), r)
                           e.target.closePopup().unbindPopup();
-                          e.target.bindPopup(observationToStr(observations.current[s.code_station]));
+                          e.target.bindPopup(handles.observationToStr(observations.current[handles.getStationId(s)]));
                           e.target.openPopup()
                         })
                     }
@@ -109,7 +101,7 @@ function HubeauMap({ apiStation, apiObservation, observationToStr }) {
                 }}
               >
 
-                <Tooltip> {s.libelle_station} </Tooltip>
+                <Tooltip> { handles.getStationDesc(s) } </Tooltip>
                 <Popup> Recherche... </Popup>
               </Marker>
             );

@@ -9,6 +9,7 @@ import { HelmetProvider } from 'react-helmet-async';
 // pages
 import Climat from "./pages/Climat"
 import CoursEau from "./pages/CoursEau"
+import Nappes from './pages/Nappes'
 
 import { Outlet, NavLink } from "react-router-dom";
 import logo from "./img/sun.svg"
@@ -28,6 +29,7 @@ function RootLayout() {
           </div>
           <NavLink to="/">Climat</NavLink>    { /* NavLink has an active to know where we are */ }
           <NavLink to="/cours-d-eau">Cours d'eau</NavLink>
+          <NavLink to="/nappes-phreatiques">Nappes Phréatiques</NavLink>
         </nav>
       </header>
       <main>
@@ -45,6 +47,7 @@ const router = createHashRouter(
     <Route path="/" element={<RootLayout />}>
       <Route index element={<Climat />} />
       <Route path="cours-d-eau" element={<CoursEau />} /> 
+      <Route path="nappes-phreatiques" element={<Nappes />} /> 
 
       { /* TODO: <Route path="*" element={<NotFound />} /> */ }
     </Route>
