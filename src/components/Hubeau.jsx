@@ -116,7 +116,7 @@ function HubeauMap({ handles }) {
 
   return (
     <>
-      <MapContainer center={[44.8702832, -0.6038162]} zoom={9} scrollWheelZoom={true} whenReady={updateNewBound}>
+      <MapContainer style={{height: "75vh"}} center={[44.8702832, -0.6038162]} zoom={9} scrollWheelZoom={true} whenReady={updateNewBound}>
         <TileLayer
           attribution={attribution}
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

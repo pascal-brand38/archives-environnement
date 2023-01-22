@@ -231,11 +231,9 @@ function getListYear(from, to) {
 import logo from "../img/sun.svg"
 function Loading() {
   return (
-    <div className="pbr-flex pbr-modal">
+    <div className="rch-flex rch-modal ">
       <div className="rch-loading-rotate"> 
-        <div>
-          <img src={logo} width="50px" />
-        </div>
+        <img src={logo} width={50} />
       </div>
     </div>
   );
@@ -342,3 +340,8 @@ function Climat() {
 // TODO: add copyright to open data meteo
 
 export default Climat;
+
+
+// TODO: dropdown is too long for years!
+// TODO: hard-coded values 2023 and 1959... should be dynamic or const
+// TODO: rainfall graph is meaningless... should be stats on months, not days

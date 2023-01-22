@@ -18,7 +18,7 @@ function RootLayout() {
   return (
     <HelmetProvider>
 
-    <div className="pbr-container">
+    <div className="rch-container">
       <header>
         <nav className='pbr-menu'>
           <div className='pbr-menu__logo'>

@@ -5,21 +5,8 @@
 @import "react-components-helper/scss/utility/rch-reset.scss";
 @import "react-components-helper/scss/utility/rch-default-values.scss";
 @import "react-components-helper/scss/layout/rch-basics.scss";
+@import "react-components-helper/scss/utility/rch-loading.scss";
 
-:root {
-  font-size: var(--rch-root-font-size);
-}
-
-body {
-  background-color: var(--rch-body-bg-color);
-  color: var(--rch-body-color);
-}
-
-.pbr-container {
-  max-width: 1024px;
-  margin: auto;
-  padding: 1rem;
-}
 
 .pbr-menu {
   // TODO: responsive menu
@@ -48,25 +35,3 @@ body {
     }
   }
 }
-
-.pbr-flex {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pbr-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,.5);
-}
-
-
-.leaflet-container {
-  height: 75vh;
-}
-
-img.huechange { filter: hue-rotate(120deg); }
