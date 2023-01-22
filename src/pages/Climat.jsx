@@ -170,10 +170,10 @@ function getStats(labels, datas, selectedYearString) {
     averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
   })
 
-  let histogramLabels = new Array(2022 - 1959 + 1).fill(0)
+  let histogramLabels = new Array(2023 - 1959 + 1).fill(0)
   histogramLabels.forEach((item, index) => histogramLabels[index] = index + 159)
-  let histogramLow = new Array(2022 - 1959 + 1).fill(0);
-  let histogramHigh = new Array(2022 - 1959 + 1).fill(0);
+  let histogramLow = new Array(2023 - 1959 + 1).fill(0);
+  let histogramHigh = new Array(2023 - 1959 + 1).fill(0);
   currentYear = 0;   // TODO: hardcoded value
   currDay = 0
   for (let i=0; i<datas.length; i++) {
@@ -244,7 +244,7 @@ function Loading() {
 function Climat() {
   const [graphData, setGraphData] = useState(null);
   const [townInfo, setTownInfo] = useState(null);
-  const [year, setYear] = useState('2022');
+  const [year, setYear] = useState('2023');
   const [ variableIndex, setVariableIndex ] = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -313,8 +313,8 @@ function Climat() {
 
         <RchDropdown
           type= 'dropdown'
-          initialValue= '2022'
-          list= { getListYear(2022, 1959) }
+          initialValue= '2023'
+          list= { getListYear(2023, 1959) }
           valueFromItem= { (item) => item }
           onSelect= { ({ index, item }) => setYear(item) }
           />
