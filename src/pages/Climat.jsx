@@ -212,7 +212,6 @@ function getStats(labels, datas, selectedYearString) {
 }
 
 async function getWeatherData(townInfo, variableIndex) {
-  console.log(townInfo)
   const src = getSrc();
   const variable = getVariable(variableIndex);
   const get = await fetch(src.url + src.apiTownInfo(townInfo) + variable.apiField);
@@ -240,15 +239,17 @@ function Loading() {
 }
 
 function Climat() {
-  const [graphData, setGraphData] = useState(null);
-  const [townInfo, setTownInfo] = useState(null);
-  const [year, setYear] = useState('2023');
+  const [ townInfo, setTownInfo ] = useState(null);
+  const [ year, setYear ] = useState('2023');
   const [ variableIndex, setVariableIndex ] = useState(0)
-  const [loading, setLoading] = useState(true)
-
+  const [ loading, setLoading ] = useState(true)
+  const [ graphData, setGraphData ] = useState(null);
+ 
   useEffect(() => {
-    if (townInfo && year) {
-      setLoading(true)
+    if (townInfo) {
+      if (!loading) {
+        setLoading(true)
+      }
       getWeatherData(townInfo, variableIndex).then(meteoData => {
         let labels = null;
         let datasets = [];
@@ -305,7 +306,8 @@ function Climat() {
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-margin-s)" }}>
         <RchGeoCoords
           defaultTownName= 'Bordeaux'
-          newCoordsCallback= { (town) => setTownInfo(town)}
+          defaultDisplay= 'Bordeaux - Gironde'
+          newCoordsCallback= { setTownInfo}
           countryFilter= { ['FR'] }
           />
 
