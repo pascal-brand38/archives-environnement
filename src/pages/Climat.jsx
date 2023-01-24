@@ -309,6 +309,7 @@ function Climat() {
           defaultDisplay= 'Bordeaux - Gironde'
           newCoordsCallback= { setTownInfo}
           countryFilter= { ['FR'] }
+          maxInList={10}
           />
 
         <RchDropdown
@@ -317,6 +318,7 @@ function Climat() {
           list= { getListYear(2023, 1959) }
           valueFromItem= { (item) => item }
           onSelect= { ({ index, item }) => setYear(item) }
+          maxNbInCol= {20}
           />
 
         <RchDropdown
