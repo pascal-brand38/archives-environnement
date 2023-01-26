@@ -82,6 +82,19 @@ var chartjsOptions = {
   },
 };
 
+var today = new Date();
+var dd = String(today.getDate()).padStart(2, '0');
+var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+var yyyy = today.getFullYear();
+const mainDates = {
+  startDate: '1959-01-01',
+  endDate: yyyy + '-' + mm + '-' + dd,
+  firstYear: 1959,
+  lastYear: yyyy
+}
+
+
+
 // from https://open-meteo.com/en/docs/meteofrance-api
 const meteoConfig = {
   archive: {
@@ -102,19 +115,19 @@ const meteoConfig = {
         variables: [
           {
             description: "Température Min",
-            apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=temperature_2m_min",    // TODO: start and end dates
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_min,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
           },
           {
             description: "Température Max",
-            apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=temperature_2m_max",    // TODO: start and end dates
+            apiField: "&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_max",
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
           },
           {
             description: "Précipitations",    // TODO: graphs for precipitations is not that good
-            apiField: "&start_date=1959-01-01&end_date=2023-01-09&daily=precipitation_sum",    // TODO: start and end dates
+            apiField: "&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum",
             getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
           },
@@ -129,7 +142,6 @@ function getVariable(index) { return getSrc().variables[index]; }
 
 function getStats(labels, datas, selectedYearString) {
   const removeYear = (label) => label.substring(5);
-  const getYear = (label) => label.substring(0,4);
 
   let labelsPerDay = []   // array [0..365] containing the labels for 1 year (day-month)
   let datasPerDay = []    // array [0..365] containing arrays of values for a given day
@@ -138,11 +150,11 @@ function getStats(labels, datas, selectedYearString) {
   let selectedYearInt = parseInt(selectedYearString)
   for (let i=0; i<365; i++) {
     labelsPerDay.push(removeYear(labels[i]))
-    datasPerDay.push([ datas[i] ])
+    datasPerDay[i] = []
   }
   let currDay = 0;
-  let currentYear = 1959+1;   // TODO: hardcoded value
-  for (let i=365; i<labels.length; i++) {
+  let currentYear = mainDates.firstYear;
+  for (let i=0; i<labels.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
       if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
         continue
@@ -163,6 +175,8 @@ function getStats(labels, datas, selectedYearString) {
   let maxPerDay = []
   let averagePerDay = [];
   datasPerDay.forEach((list, index) => {
+    // TODO: min/max without taking 10 last years...
+    // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
     list.sort((a,b)=>a-b)
     minPerDay.push(list[0])
     maxPerDay.push(list[list.length - 1])
@@ -170,11 +184,11 @@ function getStats(labels, datas, selectedYearString) {
     averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
   })
 
-  let histogramLabels = new Array(2023 - 1959 + 1).fill(0)
+  let histogramLabels = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0)
   histogramLabels.forEach((item, index) => histogramLabels[index] = index + 159)
-  let histogramLow = new Array(2023 - 1959 + 1).fill(0);
-  let histogramHigh = new Array(2023 - 1959 + 1).fill(0);
-  currentYear = 0;   // TODO: hardcoded value
+  let histogramLow = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0);
+  let histogramHigh = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0);
+  currentYear = 0;
   currDay = 0
   for (let i=0; i<datas.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
@@ -238,9 +252,20 @@ function Loading() {
   );
 }
 
+function OpenMeteoCopyright() {
+  return (
+    <a 
+      style={{fontSize: "var(--rch-size-xs", textDecoration: "none", color: "var(--rch-color-2)"}}
+      href="https://open-meteo.com/"
+    >
+      Weather data by Open-Meteo.com
+    </a>
+  );
+}
+
 function Climat() {
   const [ townInfo, setTownInfo ] = useState(null);
-  const [ year, setYear ] = useState('2023');
+  const [ year, setYear ] = useState(parseInt(mainDates.lastYear));
   const [ variableIndex, setVariableIndex ] = useState(0)
   const [ loading, setLoading ] = useState(true)
   const [ graphData, setGraphData ] = useState(null);
@@ -303,7 +328,7 @@ function Climat() {
         addFacebookTag={true}
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-margin-s)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-size-s)" }}>
         <RchGeoCoords
           defaultTownName= 'Bordeaux'
           defaultDisplay= 'Bordeaux - Gironde'
@@ -314,8 +339,8 @@ function Climat() {
 
         <RchDropdown
           type= 'dropdown'
-          initialValue= '2023'
-          list= { getListYear(2023, 1959) }
+          initialValue= { mainDates.lastYear }
+          list= { getListYear(mainDates.lastYear, mainDates.firstYear) }
           valueFromItem= { (item) => item }
           onSelect= { ({ index, item }) => setYear(item) }
           maxNbInCol= {20}
@@ -330,10 +355,13 @@ function Climat() {
           />
       </div>
       
-      { graphData && 
-        <div style={{height: "60vh", width: "100%"}}>
-          <Line redraw={true} options={chartjsOptions} data={graphData.line} />
-        </div>
+      { graphData &&
+        <>
+          <div style={{height: "60vh", width: "100%"}}>
+            <Line redraw={true} options={chartjsOptions} data={graphData.line} />
+          </div>
+          <OpenMeteoCopyright />
+        </>
       }
       { /* graphData && <Bar  data={graphData.bar} /> */ }
 
@@ -341,11 +369,9 @@ function Climat() {
     </div>
   )
 }
-// TODO: add copyright to open data meteo
-
 export default Climat;
 
 
-// TODO: dropdown is too long for years!
-// TODO: hard-coded values 2023 and 1959... should be dynamic or const
 // TODO: rainfall graph is meaningless... should be stats on months, not days
+// TODO: have a min/max on 50years only, not including the last years...
+// TODO: do not reload when year / variableIndex change. Only update stats
