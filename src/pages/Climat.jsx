@@ -121,13 +121,13 @@ const meteoConfig = {
           },
           {
             description: "Température Max",
-            apiField: "&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_max",
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_max`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
           },
           {
             description: "Précipitations",    // TODO: graphs for precipitations is not that good
-            apiField: "&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum",
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
           },
@@ -177,7 +177,7 @@ function getStats(labels, datas, selectedYearString) {
   datasPerDay.forEach((list, index) => {
     // TODO: min/max without taking 10 last years...
     // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
-    list.sort((a,b)=>a-b)
+    list = list.filter((e) => (e!==null)).sort((a,b)=>a-b)
     minPerDay.push(list[0])
     maxPerDay.push(list[list.length - 1])
     
@@ -314,6 +314,10 @@ function Climat() {
             datasets: [ { data: minMax.histogramLow, backgroundColor:'Blue' }, { data: minMax.histogramHigh, backgroundColor:'Red' } ],
           }
         });
+        setLoading(false)
+      })
+      .catch((error) => {
+        setGraphData(null)
         setLoading(false)
       })
     }
