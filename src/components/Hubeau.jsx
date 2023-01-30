@@ -24,8 +24,8 @@
 //       can be interesting
 // TODO: lazy-load leaflet when used only
 
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
+import { useState, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
 // import 'leaflet/dist/leaflet.css';
 
 

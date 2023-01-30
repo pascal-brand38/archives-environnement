@@ -343,7 +343,7 @@ function Climat() {
 
         <RchDropdown
           type= 'dropdown'
-          initialValue= { mainDates.lastYear }
+          initialValue= { mainDates.lastYear.toString() }
           list= { getListYear(mainDates.lastYear, mainDates.firstYear) }
           valueFromItem= { (item) => item }
           onSelect= { ({ index, item }) => setYear(item) }
