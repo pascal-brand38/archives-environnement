@@ -69,7 +69,7 @@ function HubeauMap({ handles }) {
 
   function MyMapEvents() {
     // look at https://leafletjs.com/reference.html for events
-    const map = useMapEvents({
+    useMapEvents({
       moveend: updateNewBound,
     });
   }
@@ -132,4 +132,9 @@ function HubeauMap({ handles }) {
 
 export {
   HubeauMap,
+}
+
+import PropTypes from 'prop-types';
+HubeauMap.propTypes = {
+  handles: PropTypes.object.isRequired
 }

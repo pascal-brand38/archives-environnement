@@ -3,6 +3,7 @@
 ///
 ///
 
+import PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet-async';
 import logo from '../img/sun.svg'
 
@@ -25,4 +26,11 @@ export default function PbrSEO({ title, description, canonical, addFacebookTag }
       <meta name="apple-mobile-web-app-capable" content="yes" />
     </Helmet>
   )
+}
+
+PbrSEO.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  canonical: PropTypes.string.isRequired,
+  addFacebookTag: PropTypes.bool.isRequired,
 }

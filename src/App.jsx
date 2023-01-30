@@ -28,7 +28,7 @@ function RootLayout() {
             Archives Environnement
           </div>
           <NavLink to="/">Climat</NavLink>    { /* NavLink has an active to know where we are */ }
-          <NavLink to="/cours-d-eau">Cours d'eau</NavLink>
+          <NavLink to="/cours-d-eau">Cours d&rsquo;eau</NavLink>
           <NavLink to="/nappes-phreatiques">Nappes Phréatiques</NavLink>
         </nav>
       </header>

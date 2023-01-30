@@ -19,7 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line, Bar } from "react-chartjs-2";
+import { Line, /* Bar */ } from "react-chartjs-2";
 import { useEffect } from 'react';
 
 ChartJS.register(
@@ -74,7 +74,7 @@ var chartjsOptions = {
     },
     y: {
       ticks: {
-        callback: function (value, index, ticks) {
+        callback: function (value /*, index, ticks */) {
           return value + "°";   // TODO: use suffix there
         },
       },
@@ -174,7 +174,7 @@ function getStats(labels, datas, selectedYearString) {
   let minPerDay = []
   let maxPerDay = []
   let averagePerDay = [];
-  datasPerDay.forEach((list, index) => {
+  datasPerDay.forEach(list => {
     // TODO: min/max without taking 10 last years...
     // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
     list = list.filter((e) => (e!==null)).sort((a,b)=>a-b)
@@ -267,14 +267,12 @@ function Climat() {
   const [ townInfo, setTownInfo ] = useState(null);
   const [ year, setYear ] = useState(parseInt(mainDates.lastYear));
   const [ variableIndex, setVariableIndex ] = useState(0)
-  const [ loading, setLoading ] = useState(true)
+  const [ loading, setLoading ] = useState(false)
   const [ graphData, setGraphData ] = useState(null);
  
   useEffect(() => {
     if (townInfo) {
-      if (!loading) {
-        setLoading(true)
-      }
+      setLoading(true)
       getWeatherData(townInfo, variableIndex).then(meteoData => {
         let labels = null;
         let datasets = [];
@@ -316,7 +314,7 @@ function Climat() {
         });
         setLoading(false)
       })
-      .catch((error) => {
+      .catch(( /* error */ ) => {
         setGraphData(null)
         setLoading(false)
       })
@@ -346,7 +344,7 @@ function Climat() {
           initialValue= { mainDates.lastYear.toString() }
           list= { getListYear(mainDates.lastYear, mainDates.firstYear) }
           valueFromItem= { (item) => item }
-          onSelect= { ({ index, item }) => setYear(item) }
+          onSelect= { ({ /* index, */ item }) => setYear(item) }
           maxNbInCol= {20}
           />
 
@@ -355,7 +353,7 @@ function Climat() {
           initialValue= { getSrc().availableVariables[0] }
           list= { getSrc().availableVariables }
           valueFromItem= { (item) => item }
-          onSelect= { ({ index, item }) => setVariableIndex(index) }
+          onSelect= { ({ index /*, item */ }) => setVariableIndex(index) }
           />
       </div>
       
