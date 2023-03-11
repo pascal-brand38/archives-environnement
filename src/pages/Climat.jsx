@@ -72,7 +72,11 @@ var chartjsOptions = {
         // },
       },
     },
-    // y.ticks.callback is dynamic - depends on the data displayed
+    y: {
+      ticks: {
+        callback: null    // is dynamic - depends on the data displayed
+      }
+    }
   },
 };
 
@@ -109,7 +113,7 @@ const meteoConfig = {
         variables: [
           {
             description: "Température Min",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_min,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
@@ -117,7 +121,7 @@ const meteoConfig = {
           },
           {
             description: "Température Max",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_max`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
@@ -125,7 +129,7 @@ const meteoConfig = {
           },
           {
             description: "Cumul Précipitations",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: true,
@@ -296,65 +300,80 @@ function OpenMeteoCopyright() {
   );
 }
 
+let meteoData = null
+
 function Climat() {
   const [ townInfo, setTownInfo ] = useState(null);
   const [ year, setYear ] = useState(parseInt(mainDates.lastYear));
   const [ variableIndex, setVariableIndex ] = useState(0)
   const [ loading, setLoading ] = useState(false)
   const [ graphData, setGraphData ] = useState(null);
- 
+
+  function newMeteoData() {
+    let labels = null;
+    let datasets = [];
+
+    console.log(meteoData)
+
+    console.log(variableIndex)
+    const minMax = getStats(
+      getVariable(variableIndex).getLabels(meteoData),
+      getVariable(variableIndex).getData(meteoData),
+      year,
+      getVariable(variableIndex).cumul);
+
+    // labels = getVariable().getLabels(meteoData)
+    // datasets.push({ data: getVariable().getData(meteoData)});
+    labels = minMax.labelsPerDay;
+    datasets.push({
+      data: minMax.minPerDay,
+      label: minMax.labelMin, 
+      borderColor: 'Blue',
+    });
+    datasets.push({
+      data: minMax.datasSelectedYear,
+      label: year,
+      borderColor: 'Green',
+    });
+    datasets.push({
+      data: minMax.maxPerDay,
+      label: minMax.labelMax, 
+      borderColor: 'Red',
+    });
+    chartjsOptions.plugins.title.text = getVariable(variableIndex).description;
+    chartjsOptions.scales.y.ticks.callback = getVariable(variableIndex).yticks;
+
+    setGraphData({
+      line: {
+        labels: labels,
+        datasets: datasets,
+      },
+      bar: {
+        labels: minMax.histogramLabels,
+        datasets: [ { data: minMax.histogramLow, backgroundColor:'Blue' }, { data: minMax.histogramHigh, backgroundColor:'Red' } ],
+      }
+    });
+
+  }
+
+  function newTownInfo(town) {
+    setLoading(true)
+    setTownInfo(town)
+    getWeatherData(town, variableIndex).then(lMeteoData => {
+      meteoData = lMeteoData
+      newMeteoData()
+      setLoading(false)
+    }).catch(( /* error */ ) => {
+      setGraphData(null)
+      setLoading(false)
+    })
+  }
+
   useEffect(() => {
-    if (townInfo) {
-      setLoading(true)
-      getWeatherData(townInfo, variableIndex).then(meteoData => {
-        let labels = null;
-        let datasets = [];
-
-        const minMax = getStats(
-          getVariable(variableIndex).getLabels(meteoData),
-          getVariable(variableIndex).getData(meteoData),
-          year,
-          getVariable(variableIndex).cumul);
-
-        // labels = getVariable().getLabels(meteoData)
-        // datasets.push({ data: getVariable().getData(meteoData)});
-        labels = minMax.labelsPerDay;
-        datasets.push({
-          data: minMax.minPerDay,
-          label: minMax.labelMin, 
-          borderColor: 'Blue',
-        });
-        datasets.push({
-          data: minMax.datasSelectedYear,
-          label: year,
-          borderColor: 'Green',
-        });
-        datasets.push({
-          data: minMax.maxPerDay,
-          label: minMax.labelMax, 
-          borderColor: 'Red',
-        });
-        chartjsOptions.plugins.title.text = getVariable(variableIndex).description;
-        chartjsOptions.scales.y.ticks.callback = getVariable(variableIndex).yticks;
-    
-        setGraphData({
-          line: {
-            labels: labels,
-            datasets: datasets,
-          },
-          bar: {
-            labels: minMax.histogramLabels,
-            datasets: [ { data: minMax.histogramLow, backgroundColor:'Blue' }, { data: minMax.histogramHigh, backgroundColor:'Red' } ],
-          }
-        });
-        setLoading(false)
-      })
-      .catch(( /* error */ ) => {
-        setGraphData(null)
-        setLoading(false)
-      })
+    if (meteoData) {
+      newMeteoData()
     }
-  }, [townInfo, year, variableIndex]);
+  }, [year, variableIndex]);
 
   return (
     <div>
@@ -369,7 +388,7 @@ function Climat() {
         <RchGeoCoords
           defaultTownName= 'Bordeaux'
           defaultDisplay= 'Bordeaux - Gironde'
-          newCoordsCallback= { setTownInfo}
+          newCoordsCallback= { newTownInfo }
           countryFilter= { ['FR'] }
           maxInList={10}
           />
@@ -409,6 +428,6 @@ function Climat() {
 export default Climat;
 
 
-// TODO: rainfall graph is meaningless... should be stats on months, not days
+// TODO: rainfall stats on months
 // TODO: have a min/max on 50years only, not including the last years...
-// TODO: do not reload when year / variableIndex change. Only update stats
+// TODO: keep all meteo data loaded
