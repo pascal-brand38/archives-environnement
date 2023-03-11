@@ -72,13 +72,7 @@ var chartjsOptions = {
         // },
       },
     },
-    y: {
-      ticks: {
-        callback: function (value /*, index, ticks */) {
-          return value + "°";   // TODO: use suffix there
-        },
-      },
-    },
+    // y.ticks.callback is dynamic - depends on the data displayed
   },
 };
 
@@ -119,6 +113,7 @@ const meteoConfig = {
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_min,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
+            yticks: (value /*, index, ticks */) => value + "°",
           },
           {
             description: "Température Max",
@@ -126,13 +121,15 @@ const meteoConfig = {
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
+            yticks: (value /*, index, ticks */) => value + "°",
           },
           {
-            description: "Précipitations",    // TODO: graphs for precipitations is not that good
+            description: "Cumul Précipitations",
             apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: true,
+            yticks: (value /*, index, ticks */) => value + "mm",
           },
         ],
       }
@@ -338,7 +335,8 @@ function Climat() {
           borderColor: 'Red',
         });
         chartjsOptions.plugins.title.text = getVariable(variableIndex).description;
-        
+        chartjsOptions.scales.y.ticks.callback = getVariable(variableIndex).yticks;
+    
         setGraphData({
           line: {
             labels: labels,
