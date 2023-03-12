@@ -303,27 +303,67 @@ function OpenMeteoCopyright() {
 // populated array meteoDataArray[town][variableindex] populated on the fly on request
 let meteoDataArray = {}
 
-async function getMeteoData(townInfo, index, year, callback) {
-  let town = townInfo.name + ' - ' + townInfo.admin2
-  console.log(town)
-  console.log(meteoDataArray[town])
-  if (meteoDataArray[town] === undefined) {
-    console.log('1')
-    meteoDataArray[town] = []
-    for (let i = 0; i < getSrc().availableVariables.length; i++) {
-      meteoDataArray[town].push(null)
+function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, callbackSetGraph) {
+  let labels = null;
+  let datasets = [];
+
+  const minMax = getStats(
+    getVariable(currentIndex).getLabels(meteoData),
+    getVariable(currentIndex).getData(meteoData),
+    currentYear,
+    getVariable(currentIndex).cumul);
+
+  // labels = getVariable().getLabels(meteoData)
+  // datasets.push({ data: getVariable().getData(meteoData)});
+  labels = minMax.labelsPerDay;
+  datasets.push({
+    data: minMax.minPerDay,
+    label: minMax.labelMin,
+    borderColor: 'Blue',
+  });
+  datasets.push({
+    data: minMax.datasSelectedYear,
+    label: currentYear,
+    borderColor: 'Green',
+  });
+  datasets.push({
+    data: minMax.maxPerDay,
+    label: minMax.labelMax,
+    borderColor: 'Red',
+  });
+  chartjsOptions.plugins.title.text = getVariable(currentIndex).description;
+  chartjsOptions.scales.y.ticks.callback = getVariable(currentIndex).yticks;
+
+  callbackSetGraph({
+    line: {
+      labels: labels,
+      datasets: datasets,
+    },
+    bar: {
+      labels: minMax.histogramLabels,
+      datasets: [{ data: minMax.histogramLow, backgroundColor: 'Blue' }, { data: minMax.histogramHigh, backgroundColor: 'Red' }],
     }
-    console.log(`meteoDataArray[town]= ${meteoDataArray[town]}`)
+  });
+}
+
+
+
+async function getMeteoData(townInfo, index, year, callbackSetGraph) {
+  let town = townInfo.name + ' - ' + townInfo.admin2
+  if (meteoDataArray[town] === undefined) {
+    meteoDataArray[town] = []
+    // for (let i = 0; i < getSrc().availableVariables.length; i++) {
+    //   meteoDataArray[town].push(null)
+    // }
   }
 
-  if (meteoDataArray[town][index] === null) {
+  if (!meteoDataArray[town][index]) {
     getWeatherData(townInfo, index).then(meteoData => {
       meteoDataArray[town][index] = meteoData
-      console.log(meteoData)
-      callback(meteoData, townInfo, index, year)
+      displayGraph(meteoData, townInfo, index, year, callbackSetGraph)
     })
   } else {
-    callback(meteoDataArray[town][index], townInfo, index, year)
+    displayGraph(meteoDataArray[town][index], townInfo, index, year, callbackSetGraph)
   }
 }
 
@@ -334,67 +374,27 @@ function Climat() {
   const [loading, setLoading] = useState(false)
   const [graphData, setGraphData] = useState(null);
 
-  function setGraphFromMeteoData(meteoData, currentTownInfo, currentIndex, currentYear) {
-    console.log(`setGraphFromMeteoData ${meteoData}`)
-    let labels = null;
-    let datasets = [];
-
-    const minMax = getStats(
-      getVariable(currentIndex).getLabels(meteoData),
-      getVariable(currentIndex).getData(meteoData),
-      currentYear,
-      getVariable(currentIndex).cumul);
-
-    // labels = getVariable().getLabels(meteoData)
-    // datasets.push({ data: getVariable().getData(meteoData)});
-    labels = minMax.labelsPerDay;
-    datasets.push({
-      data: minMax.minPerDay,
-      label: minMax.labelMin,
-      borderColor: 'Blue',
-    });
-    datasets.push({
-      data: minMax.datasSelectedYear,
-      label: currentYear,
-      borderColor: 'Green',
-    });
-    datasets.push({
-      data: minMax.maxPerDay,
-      label: minMax.labelMax,
-      borderColor: 'Red',
-    });
-    chartjsOptions.plugins.title.text = getVariable(currentIndex).description;
-    chartjsOptions.scales.y.ticks.callback = getVariable(currentIndex).yticks;
-
-    setGraphData({
-      line: {
-        labels: labels,
-        datasets: datasets,
-      },
-      bar: {
-        labels: minMax.histogramLabels,
-        datasets: [{ data: minMax.histogramLow, backgroundColor: 'Blue' }, { data: minMax.histogramHigh, backgroundColor: 'Red' }],
-      }
-    });
+  function callbackSetGraph(graph) {
+    setGraphData(graph);
     setLoading(false)
   }
 
   function newTownInfo(town) {
     setLoading(true)
     setTownInfo(town)
-    getMeteoData(town, variableIndex, year, setGraphFromMeteoData)
+    getMeteoData(town, variableIndex, year, callbackSetGraph)
   }
 
   function newYear(currentYear) {
     setLoading(true)
     setYear(currentYear)
-    getMeteoData(townInfo, variableIndex, currentYear, setGraphFromMeteoData)
+    getMeteoData(townInfo, variableIndex, currentYear, callbackSetGraph)
   }
 
   function newIndex(selectedIndex) {
     setLoading(true)
     setVariableIndex(selectedIndex)
-    getMeteoData(townInfo, selectedIndex, year, setGraphFromMeteoData)
+    getMeteoData(townInfo, selectedIndex, year, callbackSetGraph)
   }
 
   return (
