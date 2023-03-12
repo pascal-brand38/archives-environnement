@@ -105,7 +105,7 @@ const meteoConfig = {
         url: "https://archive-api.open-meteo.com/v1/archive?timezone=Europe%2FBerlin",
         apiTownInfo: (townInfo) => { return "&latitude=" + townInfo.latitude + "&longitude=" + townInfo.longitude },
         description: "Historique",
-        availableVariables: [ 
+        availableVariables: [
           "Température Min",
           "Température Max",
           "Précipitations"
@@ -113,7 +113,7 @@ const meteoConfig = {
         variables: [
           {
             description: "Température Min",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_min,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
@@ -121,7 +121,7 @@ const meteoConfig = {
           },
           {
             description: "Température Max",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_max`,
             getData: (jsonResponse) => jsonResponse.daily.temperature_2m_max,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: false,
@@ -129,7 +129,7 @@ const meteoConfig = {
           },
           {
             description: "Cumul Précipitations",
-            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=temperature_2m_min&daily=temperature_2m_max&daily=precipitation_sum`,
+            apiField: `&start_date=${mainDates.startDate}&end_date=${mainDates.endDate}&daily=precipitation_sum`,
             getData: (jsonResponse) => jsonResponse.daily.precipitation_sum,
             getLabels: (jsonResponse) => jsonResponse.daily.time,
             cumul: true,
@@ -155,7 +155,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
   let labelMax
 
   let selectedYearInt = parseInt(selectedYearString)
-  for (let i=0; i<365; i++) {
+  for (let i = 0; i < 365; i++) {
     labelsPerDay.push(removeYear(labels[i]))
     datasPerDay[i] = []
   }
@@ -163,7 +163,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
   let currentYear = mainDates.firstYear;
   let cumulYearValue = 0
   let cumulYear = [];   // array of cumul at end of year
-  for (let i=0; i<labels.length; i++) {
+  for (let i = 0; i < labels.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
       if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
         continue
@@ -182,7 +182,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
 
     currDay = (currDay + 1) % 365;
     if (currDay === 0) {
-      currentYear ++
+      currentYear++
       cumulYear.push(cumulYearValue)
       cumulYearValue = 0
     }
@@ -211,10 +211,10 @@ function getStats(labels, datas, selectedYearString, cumul) {
     datasPerDay.forEach(list => {
       // TODO: min/max without taking 10 last years...
       // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
-      list = list.filter((e) => (e!==null)).sort((a,b)=>a-b)
+      list = list.filter((e) => (e !== null)).sort((a, b) => a - b)
       minPerDay.push(list[0])
       maxPerDay.push(list[list.length - 1])
-      
+
       averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
     })
   }
@@ -225,7 +225,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
   let histogramHigh = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0);
   currentYear = 0;
   currDay = 0
-  for (let i=0; i<datas.length; i++) {
+  for (let i = 0; i < datas.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
       if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
         continue
@@ -233,7 +233,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
     }
 
     let low = datasPerDay[currDay][3];
-    let high = datasPerDay[currDay][datasPerDay[currDay].length-1-3]
+    let high = datasPerDay[currDay][datasPerDay[currDay].length - 1 - 3]
 
     if (datas[i] < low) {
       histogramLow[currentYear]--;
@@ -243,7 +243,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
     }
     currDay = (currDay + 1) % 365;
     if (currDay === 0) {
-      currentYear ++
+      currentYear++
     }
   }
 
@@ -272,7 +272,7 @@ async function getWeatherData(townInfo, variableIndex) {
 
 function getListYear(from, to) {
   let list = [];
-  for (let y=from; y>=to; y--) {
+  for (let y = from; y >= to; y--) {
     list.push(y.toString())
   }
   return list
@@ -282,7 +282,7 @@ import logo from "../img/sun.svg"
 function Loading() {
   return (
     <div className="rch-flex rch-modal ">
-      <div className="rch-loading-rotate"> 
+      <div className="rch-loading-rotate">
         <img src={logo} width={50} />
       </div>
     </div>
@@ -291,8 +291,8 @@ function Loading() {
 
 function OpenMeteoCopyright() {
   return (
-    <a 
-      style={{fontSize: "var(--rch-size-xs", textDecoration: "none", color: "var(--rch-color-2)"}}
+    <a
+      style={{ fontSize: "var(--rch-size-xs", textDecoration: "none", color: "var(--rch-color-2)" }}
       href="https://open-meteo.com/"
     >
       Weather data by Open-Meteo.com
@@ -300,48 +300,71 @@ function OpenMeteoCopyright() {
   );
 }
 
-let meteoData = null
+// populated array meteoDataArray[town][variableindex] populated on the fly on request
+let meteoDataArray = {}
+
+async function getMeteoData(townInfo, index, year, callback) {
+  let town = townInfo.name + ' - ' + townInfo.admin2
+  console.log(town)
+  console.log(meteoDataArray[town])
+  if (meteoDataArray[town] === undefined) {
+    console.log('1')
+    meteoDataArray[town] = []
+    for (let i = 0; i < getSrc().availableVariables.length; i++) {
+      meteoDataArray[town].push(null)
+    }
+    console.log(`meteoDataArray[town]= ${meteoDataArray[town]}`)
+  }
+
+  if (meteoDataArray[town][index] === null) {
+    getWeatherData(townInfo, index).then(meteoData => {
+      meteoDataArray[town][index] = meteoData
+      console.log(meteoData)
+      callback(meteoData, townInfo, index, year)
+    })
+  } else {
+    callback(meteoDataArray[town][index], townInfo, index, year)
+  }
+}
 
 function Climat() {
-  const [ townInfo, setTownInfo ] = useState(null);
-  const [ year, setYear ] = useState(parseInt(mainDates.lastYear));
-  const [ variableIndex, setVariableIndex ] = useState(0)
-  const [ loading, setLoading ] = useState(false)
-  const [ graphData, setGraphData ] = useState(null);
+  const [townInfo, setTownInfo] = useState(null);
+  const [year, setYear] = useState(parseInt(mainDates.lastYear));
+  const [variableIndex, setVariableIndex] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [graphData, setGraphData] = useState(null);
 
-  function newMeteoData() {
+  function setGraphFromMeteoData(meteoData, currentTownInfo, currentIndex, currentYear) {
+    console.log(`setGraphFromMeteoData ${meteoData}`)
     let labels = null;
     let datasets = [];
 
-    console.log(meteoData)
-
-    console.log(variableIndex)
     const minMax = getStats(
-      getVariable(variableIndex).getLabels(meteoData),
-      getVariable(variableIndex).getData(meteoData),
-      year,
-      getVariable(variableIndex).cumul);
+      getVariable(currentIndex).getLabels(meteoData),
+      getVariable(currentIndex).getData(meteoData),
+      currentYear,
+      getVariable(currentIndex).cumul);
 
     // labels = getVariable().getLabels(meteoData)
     // datasets.push({ data: getVariable().getData(meteoData)});
     labels = minMax.labelsPerDay;
     datasets.push({
       data: minMax.minPerDay,
-      label: minMax.labelMin, 
+      label: minMax.labelMin,
       borderColor: 'Blue',
     });
     datasets.push({
       data: minMax.datasSelectedYear,
-      label: year,
+      label: currentYear,
       borderColor: 'Green',
     });
     datasets.push({
       data: minMax.maxPerDay,
-      label: minMax.labelMax, 
+      label: minMax.labelMax,
       borderColor: 'Red',
     });
-    chartjsOptions.plugins.title.text = getVariable(variableIndex).description;
-    chartjsOptions.scales.y.ticks.callback = getVariable(variableIndex).yticks;
+    chartjsOptions.plugins.title.text = getVariable(currentIndex).description;
+    chartjsOptions.scales.y.ticks.callback = getVariable(currentIndex).yticks;
 
     setGraphData({
       line: {
@@ -350,30 +373,29 @@ function Climat() {
       },
       bar: {
         labels: minMax.histogramLabels,
-        datasets: [ { data: minMax.histogramLow, backgroundColor:'Blue' }, { data: minMax.histogramHigh, backgroundColor:'Red' } ],
+        datasets: [{ data: minMax.histogramLow, backgroundColor: 'Blue' }, { data: minMax.histogramHigh, backgroundColor: 'Red' }],
       }
     });
-
+    setLoading(false)
   }
 
   function newTownInfo(town) {
     setLoading(true)
     setTownInfo(town)
-    getWeatherData(town, variableIndex).then(lMeteoData => {
-      meteoData = lMeteoData
-      newMeteoData()
-      setLoading(false)
-    }).catch(( /* error */ ) => {
-      setGraphData(null)
-      setLoading(false)
-    })
+    getMeteoData(town, variableIndex, year, setGraphFromMeteoData)
   }
 
-  useEffect(() => {
-    if (meteoData) {
-      newMeteoData()
-    }
-  }, [year, variableIndex]);
+  function newYear(currentYear) {
+    setLoading(true)
+    setYear(currentYear)
+    getMeteoData(townInfo, variableIndex, currentYear, setGraphFromMeteoData)
+  }
+
+  function newIndex(selectedIndex) {
+    setLoading(true)
+    setVariableIndex(selectedIndex)
+    getMeteoData(townInfo, selectedIndex, year, setGraphFromMeteoData)
+  }
 
   return (
     <div>
@@ -386,42 +408,42 @@ function Climat() {
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "var(--rch-size-s)" }}>
         <RchGeoCoords
-          defaultTownName= 'Bordeaux'
-          defaultDisplay= 'Bordeaux - Gironde'
-          newCoordsCallback= { newTownInfo }
-          countryFilter= { ['FR'] }
+          defaultTownName='Bordeaux'
+          defaultDisplay='Bordeaux - Gironde'
+          newCoordsCallback={newTownInfo}
+          countryFilter={['FR']}
           maxInList={10}
-          />
+        />
 
         <RchDropdown
-          type= 'dropdown'
-          initialValue= { mainDates.lastYear.toString() }
-          list= { getListYear(mainDates.lastYear, mainDates.firstYear) }
-          valueFromItem= { (item) => item }
-          onSelect= { ({ /* index, */ item }) => setYear(item) }
-          maxNbInCol= {20}
-          />
+          type='dropdown'
+          initialValue={mainDates.lastYear.toString()}
+          list={getListYear(mainDates.lastYear, mainDates.firstYear)}
+          valueFromItem={(item) => item}
+          onSelect={({ /* index, */ item }) => newYear(item)}
+          maxNbInCol={20}
+        />
 
         <RchDropdown
-          type= 'dropdown'
-          initialValue= { getSrc().availableVariables[0] }
-          list= { getSrc().availableVariables }
-          valueFromItem= { (item) => item }
-          onSelect= { ({ index /*, item */ }) => setVariableIndex(index) }
-          />
+          type='dropdown'
+          initialValue={getSrc().availableVariables[0]}
+          list={getSrc().availableVariables}
+          valueFromItem={(item) => item}
+          onSelect={({ index /*, item */ }) => newIndex(index)}
+        />
       </div>
-      
-      { graphData &&
+
+      {graphData &&
         <>
-          <div style={{height: "60vh", width: "100%"}}>
+          <div style={{ height: "60vh", width: "100%" }}>
             <Line redraw={true} options={chartjsOptions} data={graphData.line} />
           </div>
           <OpenMeteoCopyright />
         </>
       }
-      { /* graphData && <Bar  data={graphData.bar} /> */ }
+      { /* graphData && <Bar  data={graphData.bar} /> */}
 
-      { loading && <Loading /> }
+      {loading && <Loading />}
     </div>
   )
 }
