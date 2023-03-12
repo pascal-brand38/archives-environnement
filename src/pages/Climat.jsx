@@ -304,6 +304,10 @@ function OpenMeteoCopyright() {
 let meteoDataArray = {}
 
 function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, callbackSetGraph) {
+  if (meteoData === null) {
+    callbackSetGraph(null)
+    return
+  }
   let labels = null;
   let datasets = [];
 
@@ -348,19 +352,18 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
 
 
 
-async function getMeteoData(townInfo, index, year, callbackSetGraph) {
+function getMeteoData(townInfo, index, year, callbackSetGraph) {
   let town = townInfo.name + ' - ' + townInfo.admin2
   if (meteoDataArray[town] === undefined) {
     meteoDataArray[town] = []
-    // for (let i = 0; i < getSrc().availableVariables.length; i++) {
-    //   meteoDataArray[town].push(null)
-    // }
   }
 
   if (!meteoDataArray[town][index]) {
     getWeatherData(townInfo, index).then(meteoData => {
       meteoDataArray[town][index] = meteoData
       displayGraph(meteoData, townInfo, index, year, callbackSetGraph)
+    }).catch(( /* error */ ) => {
+      displayGraph(null, townInfo, index, year, callbackSetGraph)
     })
   } else {
     displayGraph(meteoDataArray[town][index], townInfo, index, year, callbackSetGraph)
