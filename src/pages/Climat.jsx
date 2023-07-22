@@ -147,16 +147,28 @@ function getVariable(index) { return getSrc().variables[index]; }
 function getStats(labels, datas, selectedYearString, cumul) {
   const removeYear = (label) => label.substring(5);
 
-  let labelsPerDay = []   // array [0..365] containing the labels for 1 year (day-month)
+  // variables that are exported
+  let perDay = {
+    // per day stats
+    xLabels: [],            // array [0..365] containing the x-labels for 1 year (mm-dd)
+    minValue: [],           // array [0..365] containing the min value of this day
+    titleMin: 'Min',        // title of the graph of the min
+    maxValue: [],           // array [0..365] containing the max value of this day
+    titleMax: 'Max',        // title of the graph of the max
+    selectedYearValue: [],  // array [0..365] containing the value of this day on the selected year
+    titleSelectedYear: selectedYearString,
+  }
+  let perMonth = {
+    // per month stats: min of the average, max of the average, current year average
+
+  }
+
   let datasPerDay = []    // array [0..365] containing arrays of values for a given day
-  let datasSelectedYear = []    // array [0..365] containing the value for a given day of the selected year
   let cumulValue = 0
-  let labelMin
-  let labelMax
 
   let selectedYearInt = parseInt(selectedYearString)
   for (let i = 0; i < 365; i++) {
-    labelsPerDay.push(removeYear(labels[i]))
+    perDay.xLabels.push(removeYear(labels[i]))
     datasPerDay[i] = []
   }
   let currDay = 0;
@@ -165,7 +177,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
   let cumulYear = [];   // array of cumul at end of year
   for (let i = 0; i < labels.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
-      if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
+      if (removeYear(labels[i]) !== perDay.xLabels[currDay]) {
         continue
       }
     }
@@ -173,9 +185,9 @@ function getStats(labels, datas, selectedYearString, cumul) {
     if (selectedYearInt === currentYear) {
       if (cumul) {
         cumulValue += datas[i]
-        datasSelectedYear.push(cumulValue)
+        perDay.selectedYearValue.push(cumulValue)
       } else {
-        datasSelectedYear.push(datas[i])
+        perDay.selectedYearValue.push(datas[i])
       }
     }
     datasPerDay[currDay].push(datas[i])
@@ -188,8 +200,6 @@ function getStats(labels, datas, selectedYearString, cumul) {
     }
   }
 
-  let minPerDay = []
-  let maxPerDay = []
   let averagePerDay = [];
   if (cumul) {
     // get the min and max year
@@ -197,23 +207,21 @@ function getStats(labels, datas, selectedYearString, cumul) {
     let maxIndex = cumulYear.indexOf(Math.max(...cumulYear))
     let minCumul = 0
     let maxCumul = 0
-    labelMin = `Min (${minIndex + mainDates.firstYear})`
-    labelMax = `Max (${maxIndex + mainDates.firstYear})`
+    perDay.titleMin = `Min (${minIndex + mainDates.firstYear})`
+    perDay.titleMax = `Max (${maxIndex + mainDates.firstYear})`
     datasPerDay.forEach(list => {
       minCumul += list[minIndex]
       maxCumul += list[maxIndex]
-      minPerDay.push(minCumul)
-      maxPerDay.push(maxCumul)
+      perDay.minValue.push(minCumul)
+      perDay.maxValue.push(maxCumul)
     })
   } else {
-    labelMin = 'Min'
-    labelMax = 'Max'
     datasPerDay.forEach(list => {
       // TODO: min/max without taking 10 last years...
       // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
       list = list.filter((e) => (e !== null)).sort((a, b) => a - b)
-      minPerDay.push(list[0])
-      maxPerDay.push(list[list.length - 1])
+      perDay.minValue.push(list[0])
+      perDay.maxValue.push(list[list.length - 1])
 
       averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
     })
@@ -227,7 +235,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
   currDay = 0
   for (let i = 0; i < datas.length; i++) {
     if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
-      if (removeYear(labels[i]) !== labelsPerDay[currDay]) {
+      if (removeYear(labels[i]) !== perDay.xLabels[currDay]) {
         continue
       }
     }
@@ -247,15 +255,16 @@ function getStats(labels, datas, selectedYearString, cumul) {
     }
   }
 
+  // per month stats: min of the average, max of the average, current year average
+  perMonth.label = [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
   return {
-    labelsPerDay,   // array [0..365] containing the labels for 1 year (day-month)
-    minPerDay,
-    labelMin,
-    maxPerDay,
-    labelMax,
+    perDay,   // array [0..365] containing the labels for 1 year (mm-dd)
+
+    // beta version
+    perMonth,
+
     averagePerDay,
-    datasSelectedYear,
     histogramLabels,
     histogramLow,
     histogramHigh,
@@ -319,20 +328,20 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
 
   // labels = getVariable().getLabels(meteoData)
   // datasets.push({ data: getVariable().getData(meteoData)});
-  labels = minMax.labelsPerDay;
+  labels = minMax.perDay.xLabels;
   datasets.push({
-    data: minMax.minPerDay,
-    label: minMax.labelMin,
+    data: minMax.perDay.minValue,
+    label: minMax.perDay.titleMin,
     borderColor: 'Blue',
   });
   datasets.push({
-    data: minMax.datasSelectedYear,
-    label: currentYear,
+    data: minMax.perDay.selectedYearValue,
+    label: minMax.perDay.titleSelectedYear,
     borderColor: 'Green',
   });
   datasets.push({
-    data: minMax.maxPerDay,
-    label: minMax.labelMax,
+    data: minMax.perDay.maxValue,
+    label: minMax.perDay.titleMax,
     borderColor: 'Red',
   });
   chartjsOptions.plugins.title.text = getVariable(currentIndex).description;
