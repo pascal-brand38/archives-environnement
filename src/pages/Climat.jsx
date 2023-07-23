@@ -144,6 +144,30 @@ const meteoConfig = {
 function getSrc() { return meteoConfig.archive.sources[0]; }
 function getVariable(index) { return getSrc().variables[index]; }
 
+function getNormalizedData(labels, data) {
+  let normalizedData = []
+  labels.forEach((l, index) => {
+    let value = data[index]
+
+    if (value !== null) {
+      const date = l.split('-')
+      let y = parseInt(date[0])
+      let m = parseInt(date[1])
+      let d = parseInt(date[2])
+      if (m==1 && d==1) {
+        normalizedData[y] = []  
+      }
+      if (d==1) {
+        normalizedData[y][m] = []  
+      }
+      if ((d!=29) || (m!=2)) {
+        normalizedData[y][m][d] = value
+      }
+    }
+  })
+  return normalizedData
+}
+
 function getStats(labels, datas, selectedYearString, cumul) {
   const removeYear = (label) => label.substring(5);
 
@@ -163,111 +187,160 @@ function getStats(labels, datas, selectedYearString, cumul) {
 
   }
 
-  let datasPerDay = []    // array [0..365] containing arrays of values for a given day
-  let cumulValue = 0
-
+  let normalizedData = getNormalizedData(labels, datas)
   let selectedYearInt = parseInt(selectedYearString)
-  for (let i = 0; i < 365; i++) {
-    perDay.xLabels.push(removeYear(labels[i]))
-    datasPerDay[i] = []
-  }
-  let currDay = 0;
-  let currentYear = mainDates.firstYear;
-  let cumulYearValue = 0
-  let cumulYear = [];   // array of cumul at end of year
-  for (let i = 0; i < labels.length; i++) {
-    if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
-      if (removeYear(labels[i]) !== perDay.xLabels[currDay]) {
-        continue
-      }
-    }
-    cumulYearValue = cumulYearValue + datas[i]
-    if (selectedYearInt === currentYear) {
+
+  // compute perDay.xLabels
+  normalizedData[2022].forEach((monthArray, mIndex) => {
+    monthArray.forEach((dayValue, dIndex) => {
+      perDay.xLabels.push(`${String(mIndex).padStart(2, '0')}-${String(dIndex).padStart(2, '0')}`)
+    })
+  })
+
+  // compute perDay.selectedYearValue
+  let cumulValue = 0
+  normalizedData[selectedYearInt].forEach((monthArray, mIndex) => {
+    monthArray.forEach((dayValue, dIndex) => {
       if (cumul) {
-        cumulValue += datas[i]
+        cumulValue += dayValue
         perDay.selectedYearValue.push(cumulValue)
       } else {
-        perDay.selectedYearValue.push(datas[i])
+        perDay.selectedYearValue.push(dayValue)
       }
-    }
-    datasPerDay[currDay].push(datas[i])
+    })
+  })
 
-    currDay = (currDay + 1) % 365;
-    if (currDay === 0) {
-      currentYear++
-      cumulYear.push(cumulYearValue)
-      cumulYearValue = 0
-    }
-  }
-
-  let averagePerDay = [];
+  // compute perDay.minValue and maxValue
   if (cumul) {
-    // get the min and max year
-    let minIndex = cumulYear.indexOf(Math.min(...cumulYear))
-    let maxIndex = cumulYear.indexOf(Math.max(...cumulYear))
-    let minCumul = 0
-    let maxCumul = 0
-    perDay.titleMin = `Min (${minIndex + mainDates.firstYear})`
-    perDay.titleMax = `Max (${maxIndex + mainDates.firstYear})`
-    datasPerDay.forEach(list => {
-      minCumul += list[minIndex]
-      maxCumul += list[maxIndex]
-      perDay.minValue.push(minCumul)
-      perDay.maxValue.push(maxCumul)
+    let minCumul = { yearIndex: 0, cumulValue: undefined }
+    let maxCumul = { yearIndex: 0, cumulValue: 0 }
+    normalizedData.forEach((yearArray, yearIndex) => {
+      let cumulValue = 0
+      let nbValues = 0
+      yearArray.forEach((monthArray, monthIndex) => {
+        monthArray.forEach((dayValue, dayIndex) => {
+          cumulValue += dayValue
+          nbValues ++
+        })
+      })
+
+      if (nbValues > 360) {
+        // in case this is the current year which is not finished
+        if ((minCumul.cumulValue === undefined) || (cumulValue < minCumul.cumulValue)) {
+          minCumul.cumulValue = cumulValue
+          minCumul.yearIndex = yearIndex
+        }
+        if ((maxCumul.cumulValue === undefined) || (cumulValue > maxCumul.cumulValue)) {
+          maxCumul.cumulValue = cumulValue
+          maxCumul.yearIndex = yearIndex
+        }
+      }
+    })
+
+    let cumulValue = 0
+    perDay.titleMin = `Min (${minCumul.yearIndex})`
+    normalizedData[minCumul.yearIndex].forEach((monthArray, monthIndex) => {
+      monthArray.forEach((dayValue, dayIndex) => {
+          cumulValue += dayValue
+          perDay.minValue.push(cumulValue)
+      })
+    })
+  
+    cumulValue = 0
+    perDay.titleMax = `Max (${maxCumul.yearIndex})`
+    normalizedData[maxCumul.yearIndex].forEach((monthArray, monthIndex) => {
+      monthArray.forEach((dayValue, dayIndex) => {
+          cumulValue += dayValue
+          perDay.maxValue.push(cumulValue)
+      })
     })
   } else {
-    datasPerDay.forEach(list => {
-      // TODO: min/max without taking 10 last years...
-      // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
-      list = list.filter((e) => (e !== null)).sort((a, b) => a - b)
-      perDay.minValue.push(list[0])
-      perDay.maxValue.push(list[list.length - 1])
-
-      averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
+    normalizedData.forEach((yearArray, yearIndex) => {
+      let graphIndex = 0
+      yearArray.forEach((monthArray, monthIndex) => {
+        monthArray.forEach((dayValue, dayIndex) => {
+          if (perDay.minValue[graphIndex] === undefined) {
+            perDay.minValue[graphIndex] = dayValue
+            perDay.maxValue[graphIndex] = dayValue
+          } else {
+            perDay.minValue[graphIndex] = Math.min(perDay.minValue[graphIndex], dayValue)
+            perDay.maxValue[graphIndex] = Math.max(perDay.maxValue[graphIndex], dayValue)
+          }
+          graphIndex ++
+        })
+      })
     })
   }
 
-  let histogramLabels = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0)
-  histogramLabels.forEach((item, index) => histogramLabels[index] = index + 159)
-  let histogramLow = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0);
-  let histogramHigh = new Array(mainDates.lastYear - mainDates.firstYear + 1).fill(0);
-  currentYear = 0;
-  currDay = 0
-  for (let i = 0; i < datas.length; i++) {
-    if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
-      if (removeYear(labels[i]) !== perDay.xLabels[currDay]) {
-        continue
-      }
-    }
 
-    let low = datasPerDay[currDay][3];
-    let high = datasPerDay[currDay][datasPerDay[currDay].length - 1 - 3]
+  // let datasPerDay = []    // array [0..365] containing arrays of values for a given day
+  // // cumulValue = 0
 
-    if (datas[i] < low) {
-      histogramLow[currentYear]--;
-    }
-    if (datas[i] > high) {
-      histogramHigh[currentYear]++;
-    }
-    currDay = (currDay + 1) % 365;
-    if (currDay === 0) {
-      currentYear++
-    }
-  }
+  // for (let i = 0; i < 365; i++) {
+  //   //perDay.xLabels.push(removeYear(labels[i]))
+  //   datasPerDay[i] = []
+  // }
+  // let currDay = 0;
+  // let currentYear = mainDates.firstYear;
+  // let cumulYearValue = 0
+  // let cumulYear = [];   // array of cumul at end of year
+  // for (let i = 0; i < labels.length; i++) {
+  //   if (currDay === 31 + 29) {  // check it is not the 29th of February, that we skip
+  //     if (removeYear(labels[i]) !== perDay.xLabels[currDay]) {
+  //       continue
+  //     }
+  //   }
+  //   cumulYearValue = cumulYearValue + datas[i]
+  //   // if (selectedYearInt === currentYear) {
+  //   //   if (cumul) {
+  //   //     cumulValue += datas[i]
+  //   //     perDay.selectedYearValue.push(cumulValue)
+  //   //   } else {
+  //   //     perDay.selectedYearValue.push(datas[i])
+  //   //   }
+  //   // }
+  //   datasPerDay[currDay].push(datas[i])
+
+  //   currDay = (currDay + 1) % 365;
+  //   if (currDay === 0) {
+  //     currentYear++
+  //     cumulYear.push(cumulYearValue)
+  //     cumulYearValue = 0
+  //   }
+  // }
+
+  // if (cumul) {
+  //   // get the min and max year
+  //   let minIndex = cumulYear.indexOf(Math.min(...cumulYear))
+  //   let maxIndex = cumulYear.indexOf(Math.max(...cumulYear))
+  //   let minCumul = 0
+  //   let maxCumul = 0
+  //   perDay.titleMin = `Min (${minIndex + mainDates.firstYear})`
+  //   perDay.titleMax = `Max (${maxIndex + mainDates.firstYear})`
+  //   datasPerDay.forEach(list => {
+  //     minCumul += list[minIndex]
+  //     maxCumul += list[maxIndex]
+  //     perDay.minValue.push(minCumul)
+  //     perDay.maxValue.push(maxCumul)
+  //   })
+  // } else {
+  //   // datasPerDay.forEach(list => {
+  //   //   // TODO: min/max without taking 10 last years...
+  //   //   // list = list.slice(0, mainDates.lastYear - mainDates.firstYear - 10 )
+  //   //   // list = list.filter((e) => (e !== null)).sort((a, b) => a - b)
+  //   //   // perDay.minValue.push(list[0])
+  //   //   // perDay.maxValue.push(list[list.length - 1])
+
+  //   //   // averagePerDay.push(list.reduce((a, b) => a + b, 0) / list.length);
+  //   // })
+  // }
+
 
   // per month stats: min of the average, max of the average, current year average
   perMonth.label = [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 
   return {
-    perDay,   // array [0..365] containing the labels for 1 year (mm-dd)
-
-    // beta version
-    perMonth,
-
-    averagePerDay,
-    histogramLabels,
-    histogramLow,
-    histogramHigh,
+    perDay,   // statistics perDay of the year
   }
 }
 
@@ -352,14 +425,8 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
       labels: labels,
       datasets: datasets,
     },
-    bar: {
-      labels: minMax.histogramLabels,
-      datasets: [{ data: minMax.histogramLow, backgroundColor: 'Blue' }, { data: minMax.histogramHigh, backgroundColor: 'Red' }],
-    }
   });
 }
-
-
 
 function getMeteoData(townInfo, index, year, callbackSetGraph) {
   let town = townInfo.name + ' - ' + townInfo.admin2
@@ -453,7 +520,6 @@ function Climat() {
           <OpenMeteoCopyright />
         </>
       }
-      { /* graphData && <Bar  data={graphData.bar} /> */}
 
       {loading && <Loading />}
     </div>
