@@ -33,99 +33,6 @@ ChartJS.register(
   Legend
 );
 
-JSON.decycle = function decycle(object, replacer) {
-  "use strict";
-
-// Make a deep copy of an object or array, assuring that there is at most
-// one instance of each object or array in the resulting structure. The
-// duplicate references (which might be forming cycles) are replaced with
-// an object of the form
-
-//      {"$ref": PATH}
-
-// where the PATH is a JSONPath string that locates the first occurance.
-
-// So,
-
-//      var a = [];
-//      a[0] = a;
-//      return JSON.stringify(JSON.decycle(a));
-
-// produces the string '[{"$ref":"$"}]'.
-
-// If a replacer function is provided, then it will be called for each value.
-// A replacer function receives a value and returns a replacement value.
-
-// JSONPath is used to locate the unique object. $ indicates the top level of
-// the object or array. [NUMBER] or [STRING] indicates a child element or
-// property.
-
-  var objects = new WeakMap();     // object to path mappings
-
-  return (function derez(value, path) {
-
-// The derez function recurses through the object, producing the deep copy.
-
-      var old_path;   // The path of an earlier occurance of value
-      var nu;         // The new object or array
-
-// If a replacer function was provided, then call it to get a replacement value.
-
-      if (replacer !== undefined) {
-          value = replacer(value);
-      }
-
-// typeof null === "object", so go on if this value is really an object but not
-// one of the weird builtin objects.
-
-      if (
-          typeof value === "object"
-          && value !== null
-          && !(value instanceof Boolean)
-          && !(value instanceof Date)
-          && !(value instanceof Number)
-          && !(value instanceof RegExp)
-          && !(value instanceof String)
-      ) {
-
-// If the value is an object or array, look to see if we have already
-// encountered it. If so, return a {"$ref":PATH} object. This uses an
-// ES6 WeakMap.
-
-          old_path = objects.get(value);
-          if (old_path !== undefined) {
-              return {$ref: old_path};
-          }
-
-// Otherwise, accumulate the unique value and its path.
-
-          objects.set(value, path);
-
-// If it is an array, replicate the array.
-
-          if (Array.isArray(value)) {
-              nu = [];
-              value.forEach(function (element, i) {
-                  nu[i] = derez(element, path + "[" + i + "]");
-              });
-          } else {
-
-// If it is an object, replicate the object.
-
-              nu = {};
-              Object.keys(value).forEach(function (name) {
-                  nu[name] = derez(
-                      value[name],
-                      path + "[" + JSON.stringify(name) + "]"
-                  );
-              });
-          }
-          return nu;
-      }
-      return value;
-  }(object, "$"));
-};
-
 var chartjsOptions = {
   //responsive: false,
   maintainAspectRatio: false,
@@ -280,23 +187,40 @@ function getStats(labels, datas, selectedYearString, cumul) {
   let perDay = {
     // per day stats
     xLabels: [],            // array [0..365] containing the x-labels for 1 year (mm-dd)
-    minValue: [],           // array [0..365] containing the min value of this day
-    titleMin: 'Min',        // title of the graph of the min
-    maxValue: [],           // array [0..365] containing the max value of this day
-    titleMax: 'Max',        // title of the graph of the max
-    selectedYearValue: [],  // array [0..365] containing the value of this day on the selected year
-    titleSelectedYear: selectedYearString,
+    min: {                  
+      values: [],           // array [0..365] containing the min value of this day
+      title: 'Min',   
+      extraToolTip: [],   
+    },  
+    max: {                  
+      values: [],
+      title: 'Max',   
+      extraToolTip: [],   
+    },  
+    selectedYear: {                  
+      values: [],
+      title: selectedYearString,   
+      extraToolTip: [],   
+    },  
   }
   let perMonth = {
     // per month stats: min of the average, max of the average, current year average
     xLabels: [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
-    minValue: [],           // array containing the min average of this month
-    titleMin: 'Min',        // title of the graph of the min
-    minExtraTooltip: [],    // extra info to be displayed in tooltip
-    maxValue: [],           // array containing the max average of this month
-    titleMax: 'Max',        // title of the graph of the max
-    selectedYearValue: [],  // array [0..11] containing the average of this month on the selected year
-    titleSelectedYear: selectedYearString,
+    min: {                  
+      values: [],           // array [0..11] containing the average min value of this month
+      title: 'Min',   
+      extraToolTip: [],   
+    },  
+    max: {                  
+      values: [],
+      title: 'Max',   
+      extraToolTip: [],   
+    },  
+    selectedYear: {                  
+      values: [],
+      title: selectedYearString,   
+      extraToolTip: [],   
+    },  
   }
 
   let normalizedData = getNormalizedData(labels, datas)
@@ -309,7 +233,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
     })
   })
 
-  // compute perDay.selectedYearValue  and  perMonth.selectedYearValue
+  // compute perDay.selectedYear.values  and  perMonth.selectedYear.values
   let cumulValue = 0
   normalizedData[selectedYearInt].forEach((monthArray, mIndex) => {
     let cumulMonth = 0
@@ -320,20 +244,20 @@ function getStats(labels, datas, selectedYearString, cumul) {
       cumulMonth += dayValue
       if (cumul) {
         cumulValue += dayValue
-        perDay.selectedYearValue.push(cumulValue)
+        perDay.selectedYear.values.push(cumulValue)
       } else {
-        perDay.selectedYearValue.push(dayValue)
+        perDay.selectedYear.values.push(dayValue)
       }
     })
 
     if (cumul) {
-      perMonth.selectedYearValue.push(cumulMonth)
+      perMonth.selectedYear.values.push(cumulMonth)
     } else {
-      perMonth.selectedYearValue.push(cumulMonth / nbMonthValues)   // average value
+      perMonth.selectedYear.values.push(cumulMonth / nbMonthValues)   // average value
     }
   })
 
-  // compute minValue and maxValue
+  // compute min.values and max.values
   if (cumul) {
     let minCumul = { yearIndex: 0, cumulValue: undefined }
     let maxCumul = { yearIndex: 0, cumulValue: 0 }
@@ -347,11 +271,13 @@ function getStats(labels, datas, selectedYearString, cumul) {
           cumulMonth += dayValue
           nbValues ++
         })
-        if ((perMonth.minValue[monthIndex-1] === undefined) || (cumulMonth < perMonth.minValue[monthIndex-1])) {
-          perMonth.minValue[monthIndex-1] = cumulMonth
+        if ((perMonth.min.values[monthIndex-1] === undefined) || (cumulMonth < perMonth.min.values[monthIndex-1])) {
+          perMonth.min.values[monthIndex-1] = cumulMonth
+          perMonth.min.extraToolTip[monthIndex-1] = yearIndex
         }
-        if ((perMonth.maxValue[monthIndex-1] === undefined) || (cumulMonth > perMonth.maxValue[monthIndex-1])) {
-          perMonth.maxValue[monthIndex-1] = cumulMonth
+        if ((perMonth.max.values[monthIndex-1] === undefined) || (cumulMonth > perMonth.max.values[monthIndex-1])) {
+          perMonth.max.values[monthIndex-1] = cumulMonth
+          perMonth.max.extraToolTip[monthIndex-1] = yearIndex
         }
       })
 
@@ -369,20 +295,22 @@ function getStats(labels, datas, selectedYearString, cumul) {
     })
 
     let cumulValue = 0
-    perDay.titleMin = `Min (${minCumul.yearIndex})`
+    perDay.min.title = `Min (${minCumul.yearIndex})`
     normalizedData[minCumul.yearIndex].forEach((monthArray, monthIndex) => {
       monthArray.forEach((dayValue, dayIndex) => {
           cumulValue += dayValue
-          perDay.minValue.push(cumulValue)
+          perDay.min.values.push(cumulValue)
+          perDay.min.extraToolTip.push(minCumul.yearIndex)
       })
     })
   
     cumulValue = 0
-    perDay.titleMax = `Max (${maxCumul.yearIndex})`
+    perDay.max.title = `Max (${maxCumul.yearIndex})`
     normalizedData[maxCumul.yearIndex].forEach((monthArray, monthIndex) => {
       monthArray.forEach((dayValue, dayIndex) => {
           cumulValue += dayValue
-          perDay.maxValue.push(cumulValue)
+          perDay.max.values.push(cumulValue)
+          perDay.max.extraToolTip.push(maxCumul.yearIndex)
       })
     })
   } else {
@@ -395,23 +323,32 @@ function getStats(labels, datas, selectedYearString, cumul) {
           cumulMonth += dayValue
           nbMonthValues ++
 
-          if (perDay.minValue[graphIndex] === undefined) {
-            perDay.minValue[graphIndex] = dayValue
-            perDay.maxValue[graphIndex] = dayValue
+          if (perDay.min.values[graphIndex] === undefined) {
+            perDay.min.values[graphIndex] = dayValue
+            perDay.max.values[graphIndex] = dayValue
+            perDay.min.extraToolTip[graphIndex] = yearIndex
+            perDay.max.extraToolTip[graphIndex] = yearIndex
           } else {
-            perDay.minValue[graphIndex] = Math.min(perDay.minValue[graphIndex], dayValue)
-            perDay.maxValue[graphIndex] = Math.max(perDay.maxValue[graphIndex], dayValue)
+            if (perDay.min.values[graphIndex] > dayValue) {
+              perDay.min.values[graphIndex] = dayValue
+              perDay.min.extraToolTip[graphIndex] = yearIndex
+            }
+            if (perDay.max.values[graphIndex] < dayValue) {
+              perDay.max.values[graphIndex] = dayValue
+              perDay.max.extraToolTip[graphIndex] = yearIndex
+            }
           }
           graphIndex ++
         })
 
         cumulMonth = cumulMonth / nbMonthValues
-        if ((perMonth.minValue[monthIndex-1] === undefined) || (cumulMonth < perMonth.minValue[monthIndex-1])) {
-          perMonth.minValue[monthIndex-1] = cumulMonth
-          perMonth.minExtraTooltip[monthIndex-1] = yearIndex
+        if ((perMonth.min.values[monthIndex-1] === undefined) || (cumulMonth < perMonth.min.values[monthIndex-1])) {
+          perMonth.min.values[monthIndex-1] = cumulMonth
+          perMonth.min.extraToolTip[monthIndex-1] = yearIndex
         }
-        if ((perMonth.maxValue[monthIndex-1] === undefined) || (cumulMonth > perMonth.maxValue[monthIndex-1])) {
-          perMonth.maxValue[monthIndex-1] = cumulMonth
+        if ((perMonth.max.values[monthIndex-1] === undefined) || (cumulMonth > perMonth.max.values[monthIndex-1])) {
+          perMonth.max.values[monthIndex-1] = cumulMonth
+          perMonth.max.extraToolTip[monthIndex-1] = yearIndex
         }
 
       })
@@ -484,19 +421,22 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
   // datasets.push({ data: getVariable().getData(meteoData)});
   labels = minMax.perDay.xLabels;
   datasets.push({
-    data: minMax.perDay.minValue,
-    label: minMax.perDay.titleMin,
+    data: minMax.perDay.min.values,
+    label: minMax.perDay.min.title,
     borderColor: 'Blue',
+    extraToolTip: minMax.perDay.min.extraToolTip,
   });
   datasets.push({
-    data: minMax.perDay.selectedYearValue,
-    label: minMax.perDay.titleSelectedYear,
+    data: minMax.perDay.selectedYear.values,
+    label: minMax.perDay.selectedYear.title,
     borderColor: 'Green',
+
   });
   datasets.push({
-    data: minMax.perDay.maxValue,
-    label: minMax.perDay.titleMax,
+    data: minMax.perDay.max.values,
+    label: minMax.perDay.max.title,
     borderColor: 'Red',
+    extraToolTip: minMax.perDay.max.extraToolTip,
   });
   chartjsOptions.plugins.title.text = getVariable(currentIndex).description;
   chartjsOptions.scales.y.ticks.callback = getVariable(currentIndex).yticks;
@@ -505,20 +445,21 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
   perMonth.xLabels = minMax.perMonth.xLabels
   perMonth.datasets = []
   perMonth.datasets.push({
-    data: minMax.perMonth.minValue,
-    label: minMax.perMonth.titleMin,
+    data: minMax.perMonth.min.values,
+    label: minMax.perMonth.min.title,
     borderColor: 'Blue',
-    extraToolTip: minMax.perMonth.minExtraTooltip,
+    extraToolTip: minMax.perMonth.min.extraToolTip,
   });
   perMonth.datasets.push({
-    data: minMax.perMonth.selectedYearValue,
-    label: minMax.perMonth.titleSelectedYear,
+    data: minMax.perMonth.selectedYear.values,
+    label: minMax.perMonth.selectedYear.title,
     borderColor: 'Green',
   });
   perMonth.datasets.push({
-    data: minMax.perMonth.maxValue,
-    label: minMax.perMonth.titleMax,
+    data: minMax.perMonth.max.values,
+    label: minMax.perMonth.max.title,
     borderColor: 'Red',
+    extraToolTip: minMax.perMonth.max.extraToolTip,
   });
 
   callbackSetGraph({
@@ -529,7 +470,6 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
     perMonth: {
       labels: perMonth.xLabels,
       datasets: perMonth.datasets,
-      yopla: 'YOPLA',
     }
   });
 }
