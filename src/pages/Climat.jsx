@@ -33,6 +33,99 @@ ChartJS.register(
   Legend
 );
 
+JSON.decycle = function decycle(object, replacer) {
+  "use strict";
+
+// Make a deep copy of an object or array, assuring that there is at most
+// one instance of each object or array in the resulting structure. The
+// duplicate references (which might be forming cycles) are replaced with
+// an object of the form
+
+//      {"$ref": PATH}
+
+// where the PATH is a JSONPath string that locates the first occurance.
+
+// So,
+
+//      var a = [];
+//      a[0] = a;
+//      return JSON.stringify(JSON.decycle(a));
+
+// produces the string '[{"$ref":"$"}]'.
+
+// If a replacer function is provided, then it will be called for each value.
+// A replacer function receives a value and returns a replacement value.
+
+// JSONPath is used to locate the unique object. $ indicates the top level of
+// the object or array. [NUMBER] or [STRING] indicates a child element or
+// property.
+
+  var objects = new WeakMap();     // object to path mappings
+
+  return (function derez(value, path) {
+
+// The derez function recurses through the object, producing the deep copy.
+
+      var old_path;   // The path of an earlier occurance of value
+      var nu;         // The new object or array
+
+// If a replacer function was provided, then call it to get a replacement value.
+
+      if (replacer !== undefined) {
+          value = replacer(value);
+      }
+
+// typeof null === "object", so go on if this value is really an object but not
+// one of the weird builtin objects.
+
+      if (
+          typeof value === "object"
+          && value !== null
+          && !(value instanceof Boolean)
+          && !(value instanceof Date)
+          && !(value instanceof Number)
+          && !(value instanceof RegExp)
+          && !(value instanceof String)
+      ) {
+
+// If the value is an object or array, look to see if we have already
+// encountered it. If so, return a {"$ref":PATH} object. This uses an
+// ES6 WeakMap.
+
+          old_path = objects.get(value);
+          if (old_path !== undefined) {
+              return {$ref: old_path};
+          }
+
+// Otherwise, accumulate the unique value and its path.
+
+          objects.set(value, path);
+
+// If it is an array, replicate the array.
+
+          if (Array.isArray(value)) {
+              nu = [];
+              value.forEach(function (element, i) {
+                  nu[i] = derez(element, path + "[" + i + "]");
+              });
+          } else {
+
+// If it is an object, replicate the object.
+
+              nu = {};
+              Object.keys(value).forEach(function (name) {
+                  nu[name] = derez(
+                      value[name],
+                      path + "[" + JSON.stringify(name) + "]"
+                  );
+              });
+          }
+          return nu;
+      }
+      return value;
+  }(object, "$"));
+};
+
 var chartjsOptions = {
   //responsive: false,
   maintainAspectRatio: false,
@@ -44,6 +137,20 @@ var chartjsOptions = {
     title: {
       display: true,
       color: "White",
+    },
+    tooltip: {
+      callbacks: {
+        footer: (context) => {
+          if (context[0].dataset.extraToolTip && context[0].dataset.extraToolTip[context[0].dataIndex]) {
+            return context[0].dataset.extraToolTip[context[0].dataIndex]
+          }
+        },
+        label: (context) => {
+          // cf. https://www.chartjs.org/docs/latest/configuration/tooltip.html#label-callback
+          // console.log(context)
+          // console.log(context.dataset.extraToolTip)
+        }
+      },
     },
   },
   elements: {
@@ -78,7 +185,7 @@ var chartjsOptions = {
       }
     }
   },
-};
+}
 
 var today = new Date();
 var dd = String(today.getDate()).padStart(2, '0');
@@ -169,8 +276,6 @@ function getNormalizedData(labels, data) {
 }
 
 function getStats(labels, datas, selectedYearString, cumul) {
-  const removeYear = (label) => label.substring(5);
-
   // variables that are exported
   let perDay = {
     // per day stats
@@ -187,6 +292,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
     xLabels: [ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
     minValue: [],           // array containing the min average of this month
     titleMin: 'Min',        // title of the graph of the min
+    minExtraTooltip: [],    // extra info to be displayed in tooltip
     maxValue: [],           // array containing the max average of this month
     titleMax: 'Max',        // title of the graph of the max
     selectedYearValue: [],  // array [0..11] containing the average of this month on the selected year
@@ -302,6 +408,7 @@ function getStats(labels, datas, selectedYearString, cumul) {
         cumulMonth = cumulMonth / nbMonthValues
         if ((perMonth.minValue[monthIndex-1] === undefined) || (cumulMonth < perMonth.minValue[monthIndex-1])) {
           perMonth.minValue[monthIndex-1] = cumulMonth
+          perMonth.minExtraTooltip[monthIndex-1] = yearIndex
         }
         if ((perMonth.maxValue[monthIndex-1] === undefined) || (cumulMonth > perMonth.maxValue[monthIndex-1])) {
           perMonth.maxValue[monthIndex-1] = cumulMonth
@@ -401,6 +508,7 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
     data: minMax.perMonth.minValue,
     label: minMax.perMonth.titleMin,
     borderColor: 'Blue',
+    extraToolTip: minMax.perMonth.minExtraTooltip,
   });
   perMonth.datasets.push({
     data: minMax.perMonth.selectedYearValue,
@@ -421,6 +529,7 @@ function displayGraph(meteoData, currentTownInfo, currentIndex, currentYear, cal
     perMonth: {
       labels: perMonth.xLabels,
       datasets: perMonth.datasets,
+      yopla: 'YOPLA',
     }
   });
 }
